@@ -176,36 +176,4 @@ function prepareQuery(fromEenheid, forEenheid, ckbUri, decisionType ) {
   return query;
 }
 
-// async function loginAndGetCookies( eenheidUri ) {
-//   const response = await fetch(VENDOR_API_LOGIN, {
-//     method: 'POST',
-//     headers: {
-//       'Content-Type': 'application/json'
-//     },
-//     body: JSON.stringify({
-//       organization: eenheidUri,
-//       publisher: {
-//         uri: VENDOR_URI,
-//         key: VENDOR_KEY
-//       }
-//     })
-//   });
 
-//   // Extract and store cookies from the 'Set-Cookie' header
-//   const cookies = response.headers.raw()['set-cookie'];
-//   return cookies;
-// }
-
-// async function queryVendorApi( query, cookies ) {
-//   const response = await fetch(VENDOR_API_SPARQL, {
-//     method: 'POST',
-//     headers: {
-//       'Content-Type': 'application/x-www-form-urlencoded',
-//       'Accept': 'application/sparql-results+json',
-//       'Cookie': cookies.join(';')
-//     },
-//     body: `query=${encodeURIComponent(query)}`
-//   });
-
-//   const data = await response.json();
-// }
