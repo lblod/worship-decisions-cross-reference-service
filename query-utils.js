@@ -1,6 +1,9 @@
 import { querySudo } from '@lblod/mu-auth-sudo';
 import { sparqlEscapeUri } from 'mu';
 
+const WORSHIP_DECISIONS_BASE_URL = process.env.WORSHIP_DECISIONS_BASE_URL
+      || "https://databankerediensten.lokaalbestuur.vlaanderen.be/search/submissions/";
+
 export async function bestuurseenheidForSession( sessionUri ) {
   const queryStr = `
 
@@ -105,13 +108,16 @@ export function prepareQuery( { fromEenheid, forEenheid, ckbUri, decisionType, f
       PREFIX prov: <http://www.w3.org/ns/prov#>
       PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
       PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
+      PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
       CONSTRUCT {
         ?subject a ?what;
           skos:prefLabel ?displayLabel;
           <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#sentDate> ?dateSent;
           <http://lblod.data.gift/vocabularies/besluit/submission/form-data/sessionStartedAtTime> ?sessionStarted;
-          <http://purl.org/pav/createdBy> ?eredienst.
+          <http://purl.org/pav/createdBy> ?eredienst;
+          rdfs:seeAlso ?seeAlsoUrl.
 
           ?eredienst skos:prefLabel ?eredienstLabel.
       }
@@ -153,6 +159,7 @@ export function prepareQuery( { fromEenheid, forEenheid, ckbUri, decisionType, f
         ?eenheid <http://data.lblod.info/vocabularies/erediensten/betrokkenBestuur> ?betrokkenBestuur.
 
         ?submission a <http://rdf.myexperiment.org/ontologies/base/Submission>;
+          mu:uuid ?submissionUuid;
           <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#sentDate> ?dateSent;
           dcterms:subject ?subject;
           <http://purl.org/pav/createdBy> ?eredienst;
@@ -170,6 +177,8 @@ export function prepareQuery( { fromEenheid, forEenheid, ckbUri, decisionType, f
             dcterms:type ?besluitType.
 
           ?besluitType skos:prefLabel ?besluitTypeLabel.
+
+          BIND(IRI(CONCAT("${WORSHIP_DECISIONS_BASE_URL}", STR(?submissionUuid))) as ?seeAlsoUrl)
 
           BIND(STRBEFORE(STR(?dateSent), "T") AS ?niceDateSent)
           BIND(STRBEFORE(STR(?sessionStarted), "T") AS ?niceSessionStarted)

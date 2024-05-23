@@ -21,6 +21,9 @@ GET /related-document-information
 Note: If `forRelatedDecision` is not provided, both `forDecisionType` and `forEenheid` are mandatory.
 
 Note: It will only work when the call goes through mu-identifier.
+#### Enviroment variables
+- `WORSHIP_DECISIONS_BASE_URL`: Base url where more information may be found about the related decision. It's a link to the connectected submission.
+      Defaults to "https://databankerediensten.lokaalbestuur.vlaanderen.be/search/submissions/"
 #### Response
 
 - Status 200: Returns the related document information in Turtle format.
