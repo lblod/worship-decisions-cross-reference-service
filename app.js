@@ -34,7 +34,7 @@ app.get('/related-document-information', async function( req, res ) {
     // If no decision has been provided,
     //  we need to calculate extra parameters for the query, so we can provide a list of options.
     let query = '';
-    
+
     if(!forDecision) {
 
       const fromEenheid = await bestuurseenheidForSession(sessionUri);
