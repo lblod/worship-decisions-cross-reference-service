@@ -1,6 +1,6 @@
 # Worship Decisions Cross-Reference Service
 
-This repository contains the code for the `worship-decisions-cross-reference-service`, a Node.js application that provides a service for cross-referencing worship decisions. The service exposes endpoints to fetch related document information based on decision types and organizational units.
+Service to retrieve related document information for decisions, enabling users to perform cross-referencing.
 
 ## Endpoints
 
