@@ -18,7 +18,7 @@ GET /related-document-information
 - `forEenheid`: (Optional) The organizational unit to fetch related documents for.
 - `forRelatedDecision`: (Optional) A specific decision URI, which will provide the extra info about the related decisbion .
 
-Note: If `forDecision` is not provided, both `forDecisionType` and `forEenheid` are mandatory.
+Note: If `forRelatedDecision` is not provided, both `forDecisionType` and `forEenheid` are mandatory.
 
 Note: It will only work when the call goes through mu-identifier.
 #### Response
