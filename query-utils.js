@@ -92,8 +92,9 @@ export function getRelatedDecisionType( decisionType, hasCKB ) {
   }
 }
 
-export function prepareQuery(fromEenheid, forEenheid, ckbUri, decisionType ) {
+export function prepareQuery( { fromEenheid, forEenheid, ckbUri, decisionType, forDecision }) {
   let query;
+
   if(ckbUri) {
     query = ''; // specific query needed for eenheid with CBK
   }
@@ -107,19 +108,45 @@ export function prepareQuery(fromEenheid, forEenheid, ckbUri, decisionType ) {
 
       CONSTRUCT {
         ?subject a ?what;
-          skos:prefLabel ?displayLabel.
+          skos:prefLabel ?displayLabel;
+          <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#sentDate> ?dateSent;
+          <http://lblod.data.gift/vocabularies/besluit/submission/form-data/sessionStartedAtTime> ?sessionStarted;
+          <http://purl.org/pav/createdBy> ?eredienst.
+
+          ?eredienst skos:prefLabel ?eredienstLabel.
       }
       WHERE {
-        VALUES ?eenheid {
-          ${sparqlEscapeUri(fromEenheid)}
+
+       ${fromEenheid ?
+           `
+            VALUES ?eenheid {
+              ${sparqlEscapeUri(fromEenheid)}
+            }
+           `: ''
         }
 
-        VALUES ?eredienst {
-         ${sparqlEscapeUri(forEenheid)}
+       ${forEenheid ?
+           `
+            VALUES ?eredienst {
+              ${sparqlEscapeUri(forEenheid)}
+            }
+           `: ''
         }
 
-        VALUES ?besluitType {
-          ${sparqlEscapeUri(decisionType)}
+       ${decisionType ?
+          `
+            VALUES ?besluitType {
+              ${sparqlEscapeUri(decisionType)}
+            }
+          `: ''
+        }
+
+       ${forDecision ?
+          `
+            VALUES ?subject {
+              ${sparqlEscapeUri(forDecision)}
+            }
+          `: ''
         }
 
         ?betrokkenBestuur <http://www.w3.org/ns/org#organization> ?eredienst.
@@ -130,6 +157,8 @@ export function prepareQuery(fromEenheid, forEenheid, ckbUri, decisionType ) {
           dcterms:subject ?subject;
           <http://purl.org/pav/createdBy> ?eredienst;
           prov:generated ?formData.
+
+          ?eredienst skos:prefLabel ?eredienstLabel.
 
           ?subject a ?what.
 
