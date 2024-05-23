@@ -28,9 +28,14 @@ export async function bestuurseenheidForSession( sessionUri ) {
 }
 
 export async function getRelatedToCKB( eenheidUri ) {
-  // Query the database with query
-  // if not found return null else the URI
-    return null; // or the CKB URI
+  const queryStr = `
+    SELECT DISTINCT ?ckb WHERE {
+      ?ckb <http://www.w3.org/ns/org#hasSubOrganization> ${sparqlEscapeUri(eenheidUri)};
+        a <http://data.lblod.info/vocabularies/erediensten/CentraalBestuurVanDeEredienst>.
+    }
+  `;
+  const result = (await querySudo(queryStr))?.results?.bindings || [];
+  return result[0] ? result[0].ckb.value : null;
 }
 
 export function getRelatedDecisionType( decisionType, hasCKB ) {
