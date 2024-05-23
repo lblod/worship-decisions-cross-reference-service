@@ -1,4 +1,4 @@
-# Worship Decisions Cross-Reference Service
+# worship-decisions-cross-reference-service
 
 Service to retrieve related document information for decisions, enabling users to perform cross-referencing.
 
@@ -19,6 +19,7 @@ GET /related-document-information
 - `forDecision`: (Optional) A specific decision URI to fetch related documents for.
 
 Note: If `forDecision` is not provided, both `forDecisionType` and `forEenheid` are mandatory.
+
 Note: It will only work when the call goes through mu-identifier.
 #### Response
 
@@ -35,6 +36,13 @@ GET /related-document-information?forDecisionType=someType&forEenheid=someEenhei
 Turtle formatted response with related document information.
 
 ## Development Notes
+The service checks if the organizational unit is related to a CKB (Centraal Kerkbestuur).
 
-- The service checks if the organizational unit is related to a CKB (Centraal Kerkbestuur).
-  - Since we don't have this data yet, we allow, in development mode, that the service bypasses certain checks to ease testing and debugging.
+Since we don't have this data yet, we allow, in development mode, that the service bypasses certain checks to ease testing and debugging.
+
+To do so, in your `docker-compose.override.yml` put:
+```
+  worship-decisions-cross-reference:
+    environment:
+      NODE_ENV: "development"
+```
