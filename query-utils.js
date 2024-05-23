@@ -51,10 +51,10 @@ export function getRelatedDecisionType( decisionType, hasCKB ) {
       // Goedkeuringsbesluit Budget(wijziging)
       "https://data.vlaanderen.be/id/concept/BesluitType/df261490-cc74-4f80-b783-41c35e720b46":
       // Budgetten(wijzigingen) - Indiening bij toezichthoudende gemeente of provincie
-      "https://data.vlaanderen.be/doc/concept/BesluitDocumentType/18833df2-8c9e-4edd-87fd-b5c252337349",
+      "https://data.vlaanderen.be/id/concept/BesluitDocumentType/18833df2-8c9e-4edd-87fd-b5c252337349",
 
       // Goedkeuringsbesluit Meerjarenplan(wijziging)
-      "https://data.vlaanderen.be/doc/concept/BesluitType/3fcf7dba-2e5b-4955-a489-6dd8285c013b":
+      "https://data.vlaanderen.be/id/concept/BesluitType/3fcf7dba-2e5b-4955-a489-6dd8285c013b":
       // Meerjarenplannen(wijzigingen) van de besturen van de eredienst
       "https://data.vlaanderen.be/id/concept/BesluitDocumentType/2c9ada23-1229-4c7e-a53e-acddc9014e4e"
     };
@@ -70,20 +70,20 @@ export function getRelatedDecisionType( decisionType, hasCKB ) {
       // Goedkeuringsbesluit Budget(wijziging)
       "https://data.vlaanderen.be/id/concept/BesluitType/df261490-cc74-4f80-b783-41c35e720b46":
       // Budget(wijziging) - Indiening bij toezichthoudende gemeente of provincie
-      "https://data.vlaanderen.be/doc/concept/BesluitType/40831a2c-771d-4b41-9720-0399998f1873",
+      "https://data.vlaanderen.be/id/concept/BesluitType/40831a2c-771d-4b41-9720-0399998f1873",
 
       // Goedkeuringsbesluit Meerjarenplan(wijziging)
-      "https://data.vlaanderen.be/doc/concept/BesluitType/3fcf7dba-2e5b-4955-a489-6dd8285c013b":
+      "https://data.vlaanderen.be/id/concept/BesluitType/3fcf7dba-2e5b-4955-a489-6dd8285c013b":
       // Meerjarenplan(aanpassing)
-      "https://data.vlaanderen.be/doc/concept/BesluitType/f56c645d-b8e1-4066-813d-e213f5bc529f",
+      "https://data.vlaanderen.be/id/concept/BesluitType/f56c645d-b8e1-4066-813d-e213f5bc529f",
 
       // Schorsingsbesluit
-      "https://data.vlaanderen.be/doc/concept/BesluitType/b25faa84-3ab5-47ae-98c0-1b389c77b827":
+      "https://data.vlaanderen.be/id/concept/BesluitType/b25faa84-3ab5-47ae-98c0-1b389c77b827":
       // Notulen
       "https://data.vlaanderen.be/id/concept/BesluitDocumentType/8e791b27-7600-4577-b24e-c7c29e0eb773",
 
       // Stuiten
-      "https://data.vlaanderen.be/doc/concept/BesluitDocumentType/24743b26-e0fb-4c14-8c82-5cd271289b0e":
+      "https://data.vlaanderen.be/id/concept/BesluitDocumentType/24743b26-e0fb-4c14-8c82-5cd271289b0e":
       // Notulen
       "https://data.vlaanderen.be/id/concept/BesluitDocumentType/8e791b27-7600-4577-b24e-c7c29e0eb773"
 
