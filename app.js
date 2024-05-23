@@ -40,15 +40,34 @@ app.get('/related-document-information', async function( req, res ) {
     }
 
     // Figure out whether Eenheid is related to CKB
-    const ckbUri = await getRelatedToCKB( forEenheidUri );
+    let ckbUri = await getRelatedToCKB( forEenheidUri );
+
+    // ------ Start temporary implmentation
+    // We currently don't support documents provided by CKB's (mainly the data is broken)
+    // But we still, in development mode, want to make it easier to return some data
+    if(ckbUri && process.env.NODE_ENV != 'development') {
+      console.warn(`CKB ${ckbUri} found for ${forEenheidUri}, currently case is not supported`);
+      res.set('Content-Type', 'text/turtle');
+      return res.send('');
+    }
+    else if(process.env.NODE_ENV != 'development') {
+      console.warn(`CKB ${ckbUri} found for ${forEenheidUri}, currently case is not supported, but in development mode, we just ignore this`);
+      ckbUri = null;
+    }
+    // ------ End temporary implmentation
 
     // Get decision type to request
     const relatedDecisionType = getRelatedDecisionType( decisionType, ckbUri );
+    if(!relatedDecisionType) {
+      return res.status(400).json({
+        error: `No related document/decisionType found ${decisionType}. Aborting`
+      });
+    }
 
     const query = prepareQuery(fromEenheidUri, forEenheidUri, ckbUri, relatedDecisionType );
 
     // execute query
-    // TODO: Here we could add a hook to connect to vendor-API if we want.
+    // TODO: Here we could add a hook to connect to vendor-API if we need to.
     const triples = (await querySudo(query))?.results?.bindings || [];
     const nTriples = triples.map(t => serializeTriple(t)) || [];
 
@@ -59,8 +78,3 @@ app.get('/related-document-information', async function( req, res ) {
     return res.status(500).json({ error: error.message });
   }
 });
-
-
-/*
- * Utils
- */
