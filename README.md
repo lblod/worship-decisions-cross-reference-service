@@ -46,3 +46,5 @@ To do so, in your `docker-compose.override.yml` put:
     environment:
       NODE_ENV: "development"
 ```
+## TODO
+ - Correctly handle fetching the related decisions for eenheden which do have a CKB. (We don't have data yet.)
