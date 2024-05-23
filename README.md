@@ -36,5 +36,5 @@ Turtle formatted response with related document information.
 
 ## Development Notes
 
-- The service checks if the organizational unit is related to a CKB (central knowledge base).
-  - Since we don't have this data yet, we allow, in development mode, that the service bypasses certain checks to facilitate testing and debugging.
+- The service checks if the organizational unit is related to a CKB (Centraal Kerkbestuur).
+  - Since we don't have this data yet, we allow, in development mode, that the service bypasses certain checks to ease testing and debugging.
