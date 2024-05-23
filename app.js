@@ -13,7 +13,7 @@ app.get('/related-document-information', async function( req, res ) {
     // Get the related decisions for specific type & bestuurseenheid provided in the query parameters `?forDecisionType=..&?forEenheid=...
     const forDecisionType = req.query.forDecisionType;
     const forEenheid = req.query.forEenheid;
-    const forDecision = req.query.forDecision;
+    const forDecision = req.query.forRelatedDecision;
 
     // If forDecision is not provided, forDecisionType and forEenheid become mandatory.
     if (!forDecision && (!forEenheid || !forEenheid)) {
