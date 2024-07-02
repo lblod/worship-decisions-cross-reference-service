@@ -99,7 +99,104 @@ export function prepareQuery( { fromEenheid, forEenheid, ckbUri, decisionType, f
   let query;
 
   if(ckbUri) {
-    query = ''; // specific query needed for eenheid with CBK
+    query = `
+      PREFIX dcterms: <http://purl.org/dc/terms/>
+      PREFIX prov: <http://www.w3.org/ns/prov#>
+      PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+      PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
+      PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+      CONSTRUCT {
+        ?childDecision a ?what;
+          skos:prefLabel ?displayLabel;
+          <http://purl.org/pav/createdBy> ?eredienst;
+          <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#sentDate> ?dateSent;
+          rdfs:seeAlso ?seeAlsoUrl.
+
+          ?eredienst skos:prefLabel ?eredienstLabel.
+      }
+      WHERE {
+
+       ${fromEenheid ?
+           `
+            VALUES ?eenheid {
+              ${sparqlEscapeUri(fromEenheid)}
+            }
+           `: ''
+        }
+
+       ${forEenheid ?
+           `
+            VALUES ?eredienst {
+              ${sparqlEscapeUri(forEenheid)}
+            }
+           `: ''
+        }
+
+       ${decisionType ?
+          `
+            VALUES ?besluitType {
+              ${sparqlEscapeUri(decisionType)}
+            }
+          `: ''
+        }
+
+       ${forDecision ?
+          `
+            VALUES ?subject {
+              ${sparqlEscapeUri(forDecision)}
+            }
+          `: ''
+        }
+
+       ${ckbUri ?
+          `
+            VALUES ?ckb {
+              ${sparqlEscapeUri(ckbUri)}
+            }
+          `: ''
+        }
+
+        ?betrokkenBestuur <http://www.w3.org/ns/org#organization> ?eredienst.
+        ?eenheid <http://data.lblod.info/vocabularies/erediensten/betrokkenBestuur> ?betrokkenBestuur.
+
+        ?ckb <http://www.w3.org/ns/org#hasSubOrganization> ?eredienst.
+
+
+        ?submission a <http://rdf.myexperiment.org/ontologies/base/Submission>;
+          mu:uuid ?submissionUuid;
+          <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#sentDate> ?dateSent;
+          dcterms:subject ?subject;
+          <http://purl.org/pav/createdBy> ?ckb;
+          prov:generated ?formData.
+
+          ?eredienst skos:prefLabel ?eredienstLabel.
+          ?ckb skos:prefLabel ?ckbLabel.
+
+
+          ?formData
+            dcterms:type ?besluitType;
+            dcterms:relation ?childDecision.
+
+          ?besluitType skos:prefLabel ?besluitTypeLabel.
+
+          ?childSubmission dcterms:subject ?childDecision;
+               <http://purl.org/pav/createdBy> ?eredienst;
+               prov:generated ?childFormData.
+
+          ?childFormData <http://mu.semte.ch/vocabularies/ext/decisionType> ?childDecisionType.
+
+          ?childDecisionType skos:prefLabel ?childDecisionTypeLabel.
+
+          ?childDecision a ?what.
+
+          BIND(IRI(CONCAT("${WORSHIP_DECISIONS_BASE_URL}", STR(?submissionUuid))) as ?seeAlsoUrl)
+
+          BIND(STRBEFORE(STR(?dateSent), "T") AS ?niceDateSent)
+          BIND(CONCAT(?childDecisionTypeLabel, " van ", ?eredienstLabel, " gebundeld en verstuurd door ", ?ckbLabel, 
+                       " op ", ?niceDateSent) as ?displayLabel)
+      }`;
   }
   else {
     query = `
