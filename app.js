@@ -2,7 +2,7 @@ import { app } from 'mu';
 import { querySudo } from '@lblod/mu-auth-sudo';
 import { sparqlEscapeUri } from 'mu';
 import { serializeTriple } from './utils';
-import { bestuurseenheidForSession, getRelatedToCKB, getRelatedDecisionType, prepareQuery } from './query-utils';
+import { bestuurseenheidForSession, getRelatedToCKB, getEenheidForDecision, getRelatedDecisionType, prepareQuery } from './query-utils';
 
 app.get('/hello', function( req, res ) {
   res.send('Hello from worship-decisions-cross-reference-service');
@@ -47,20 +47,6 @@ app.get('/related-document-information', async function( req, res ) {
       // Figure out whether Eenheid is related to CKB
       let ckbUri = await getRelatedToCKB( forEenheid );
 
-      // ------ Start temporary implementation
-      // We currently don't support documents provided by CKB's (mainly the data is broken)
-      // But we still, in development mode, want to make it easier to return some data
-      if(ckbUri && process.env.NODE_ENV != 'development') {
-        console.warn(`CKB ${ckbUri} found for ${forEenheid}, currently case is not supported`);
-        res.set('Content-Type', 'text/turtle');
-        return res.send('');
-      }
-      else if(process.env.NODE_ENV == 'development') {
-        console.warn(`CKB ${ckbUri} found for ${forEenheid}, currently case is not supported, but in development mode, we just ignore this`);
-        ckbUri = null;
-      }
-      // ------ End temporary implementation
-
       // Get decision type to request
       const decisionType = getRelatedDecisionType( forDecisionType, ckbUri );
       if(!decisionType) {
@@ -73,7 +59,16 @@ app.get('/related-document-information', async function( req, res ) {
     }
 
     else {
-      query = prepareQuery({ forDecision } );
+      const eenheid = await getEenheidForDecision(forDecision);
+      let ckbUri = await getRelatedToCKB(eenheid);
+
+      if(ckbUri) {
+        query = prepareQuery({ forDecision, ckbUri } );
+      }
+      else {
+        query = prepareQuery({ forDecision } );
+      }
+
     }
 
     // execute query
