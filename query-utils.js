@@ -159,7 +159,7 @@ export function prepareQuery( { fromEenheid, forEenheid, ckbUri, decisionType, f
 
        ${forDecision ?
           `
-            VALUES ?subject {
+            VALUES ?childDecision {
               ${sparqlEscapeUri(forDecision)}
             }
           `: ''
@@ -209,7 +209,7 @@ export function prepareQuery( { fromEenheid, forEenheid, ckbUri, decisionType, f
           BIND(IRI(CONCAT("${WORSHIP_DECISIONS_BASE_URL}", STR(?submissionUuid))) as ?seeAlsoUrl)
 
           BIND(STRBEFORE(STR(?dateSent), "T") AS ?niceDateSent)
-          BIND(CONCAT(?childDecisionTypeLabel, " van ", ?eredienstLabel, " gebundeld en verstuurd door ", ?ckbLabel, 
+          BIND(CONCAT(?childDecisionTypeLabel, " van ", ?eredienstLabel, " gebundeld en verstuurd door ", ?ckbLabel,
                        " op ", ?niceDateSent) as ?displayLabel)
       }`;
   }
