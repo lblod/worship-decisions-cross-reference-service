@@ -41,6 +41,21 @@ export async function getRelatedToCKB( eenheidUri ) {
   return result[0] ? result[0].ckb.value : null;
 }
 
+export async function getEenheidForDecision( decisionUri ) {
+  const queryStr = `
+    PREFIX dcterms: <http://purl.org/dc/terms/>
+
+    SELECT DISTINCT ?eenheid WHERE {
+      ?submission dcterms:subject ${sparqlEscapeUri(decisionUri)};
+        <http://purl.org/pav/createdBy> ?eenheid.
+    }
+  `;
+
+  const result = (await querySudo(queryStr))?.results?.bindings || [];
+  return result[0] ? result[0].eenheid.value : null;
+
+}
+
 export function getRelatedDecisionType( decisionType, hasCKB ) {
   // TODO: wrap up the table once we have the full spec.
   // See: https://docs.google.com/spreadsheets/d/1DIQkJTCy3Z16xsZaE2QFOhXCQBDKS4ifeYV_592DxRw/edit?usp=sharing
