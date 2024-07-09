@@ -2,7 +2,9 @@ import { app } from 'mu';
 import { querySudo } from '@lblod/mu-auth-sudo';
 import { sparqlEscapeUri } from 'mu';
 import { serializeTriple } from './utils';
-import { bestuurseenheidForSession, getRelatedToCKB, getRelatedDecisionType, prepareQuery } from './query-utils';
+import { bestuurseenheidForSession, getRelatedToCKB, getEenheidForDecision, getRelatedDecisionType, prepareQuery } from './query-utils';
+
+const BYPASS_HOP_CENTRAAL_BESTUUR = process.env.BYPASS_HOP_CENTRAAL_BESTUUR || false;
 
 app.get('/hello', function( req, res ) {
   res.send('Hello from worship-decisions-cross-reference-service');
@@ -15,10 +17,16 @@ app.get('/related-document-information', async function( req, res ) {
     const forEenheid = req.query.forEenheid;
     const forDecision = req.query.forRelatedDecision;
 
-    // If forDecision is not provided, forDecisionType and forEenheid become mandatory.
-    if (!forDecision && (!forEenheid || !forEenheid)) {
+    if (!forDecision && (!forDecisionType || !forEenheid)) {
       return res.status(400).json({
         error: "Missing required query parameters. Please provide 'forDecisionType' and 'forEenheid'."
+      });
+    }
+
+    if(forDecision && !forDecisionType) {
+      return res.status(400).json({
+        error: `Missing required query parameters.
+                If forDecision is provided, we expect forDecisionType too.`
       });
     }
 
@@ -38,6 +46,7 @@ app.get('/related-document-information', async function( req, res ) {
     if(!forDecision) {
 
       const fromEenheid = await bestuurseenheidForSession(sessionUri);
+
       if(!fromEenheid) {
         return res.status(400).json({
           error: "No eenheid found for mu-session-id. Aborting"
@@ -47,33 +56,35 @@ app.get('/related-document-information', async function( req, res ) {
       // Figure out whether Eenheid is related to CKB
       let ckbUri = await getRelatedToCKB( forEenheid );
 
-      // ------ Start temporary implementation
-      // We currently don't support documents provided by CKB's (mainly the data is broken)
-      // But we still, in development mode, want to make it easier to return some data
-      if(ckbUri && process.env.NODE_ENV != 'development') {
-        console.warn(`CKB ${ckbUri} found for ${forEenheid}, currently case is not supported`);
-        res.set('Content-Type', 'text/turtle');
-        return res.send('');
-      }
-      else if(process.env.NODE_ENV == 'development') {
-        console.warn(`CKB ${ckbUri} found for ${forEenheid}, currently case is not supported, but in development mode, we just ignore this`);
+      if( BYPASS_HOP_CENTRAAL_BESTUUR ) {
+        console.warn(`Skipping extra hop centraal bestuur. This should only be used in development mode.`);
         ckbUri = null;
       }
-      // ------ End temporary implementation
 
       // Get decision type to request
-      const decisionType = getRelatedDecisionType( forDecisionType, ckbUri );
-      if(!decisionType) {
+      const decisionTypeData = getRelatedDecisionType( forDecisionType, ckbUri );
+
+      if(!decisionTypeData.decisionType) {
         return res.status(400).json({
           error: `No related document/decisionType found ${forDecisionType}. Aborting`
         });
       }
 
-      query = prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionType });
+      query = prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData });
     }
 
     else {
-      query = prepareQuery({ forDecision } );
+      const eenheid = await getEenheidForDecision(forDecision);
+      let ckbUri = await getRelatedToCKB(eenheid);
+
+      if( BYPASS_HOP_CENTRAAL_BESTUUR ) {
+        console.warn(`Skipping extra hop centraal bestuur. This should only be used in development mode.`);
+        ckbUri = null;
+      }
+
+      const decisionTypeData = getRelatedDecisionType( forDecisionType, ckbUri );
+
+      query = prepareQuery({ forDecision, ckbUri, decisionTypeData } );
     }
 
     // execute query
