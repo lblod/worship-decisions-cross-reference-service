@@ -136,11 +136,11 @@ export function prepareQuery( { fromEenheid, forEenheid, ckbUri, decisionTypeDat
       CONSTRUCT {
         ?childDecision a ?what;
           skos:prefLabel ?displayLabel;
-          <http://purl.org/pav/createdBy> ?eredienst;
+          <http://purl.org/pav/createdBy> ?ckb;
           <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#sentDate> ?dateSent;
           rdfs:seeAlso ?seeAlsoUrl.
 
-          ?eredienst skos:prefLabel ?eredienstLabel.
+          ?ckb skos:prefLabel ?niceIngezondenDoor.
       }
       WHERE {
 
@@ -216,6 +216,8 @@ export function prepareQuery( { fromEenheid, forEenheid, ckbUri, decisionTypeDat
           ?childDecisionType skos:prefLabel ?childDecisionTypeLabel.
 
           ?childDecision a ?what.
+
+          BIND(CONCAT(?ckbLabel, " namens ", ?eredienstLabel) as ?niceIngezondenDoor)
 
           BIND(IRI(CONCAT("${WORSHIP_DECISIONS_BASE_URL}", STR(?submissionUuid))) as ?seeAlsoUrl)
 
