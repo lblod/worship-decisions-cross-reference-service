@@ -136,11 +136,11 @@ export function prepareQuery( { fromEenheid, forEenheid, ckbUri, decisionTypeDat
       CONSTRUCT {
         ?childDecision a ?what;
           skos:prefLabel ?displayLabel;
-          <http://purl.org/pav/createdBy> ?ckb;
+          <http://purl.org/pav/createdBy> ?eredienst;
           <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#sentDate> ?dateSent;
           rdfs:seeAlso ?seeAlsoUrl.
 
-          ?ckb skos:prefLabel ?niceIngezondenDoor.
+          ?eredienst skos:prefLabel ?niceIngezondenDoor.
       }
       WHERE {
 
