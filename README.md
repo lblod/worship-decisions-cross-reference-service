@@ -41,7 +41,7 @@ Turtle formatted response with related document information.
 ## Development Notes
 The service checks if the organizational unit is related to a Centraal Bestuur.
 
-Since we don't have this data yet, we allow, in development mode, that the service bypasses certain checks to ease testing and debugging.
+Since it's sometimes a pain to find these, we allow, in development mode, that the service bypasses certain checks to ease testing and debugging.
 
 To do so, in your `docker-compose.override.yml` put:
 ```
