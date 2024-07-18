@@ -70,7 +70,7 @@ export function getRelatedDecisionType( decisionType, hasCKB ) {
     // Goedkeuringsbesluit Budget(wijziging)
     "https://data.vlaanderen.be/id/concept/BesluitType/df261490-cc74-4f80-b783-41c35e720b46":
     // Budgetten(wijzigingen) - Indiening bij toezichthoudende gemeente of provincie
-    "https://data.vlaanderen.be/id/concept/BesluitDocumentType/18833df2-8c9e-4edd-87fd-b5c252337349",
+    "https://data.vlaanderen.be/id/concept/BesluitDocumentType/ce569d3d-25ff-4ce9-a194-e77113597e29",
 
     // Goedkeuringsbesluit Meerjarenplan(wijziging)
     "https://data.vlaanderen.be/id/concept/BesluitType/3fcf7dba-2e5b-4955-a489-6dd8285c013b":
@@ -87,7 +87,7 @@ export function getRelatedDecisionType( decisionType, hasCKB ) {
     // Goedkeuringsbesluit Budget(wijziging)
     "https://data.vlaanderen.be/id/concept/BesluitType/df261490-cc74-4f80-b783-41c35e720b46":
     // Budget(wijziging) - Indiening bij toezichthoudende gemeente of provincie
-    "https://data.vlaanderen.be/id/concept/BesluitType/40831a2c-771d-4b41-9720-0399998f1873",
+    "https://data.vlaanderen.be/id/concept/BesluitType/d85218e2-a75f-4a30-9182-512b5c9dd1b2",
 
     // Goedkeuringsbesluit Meerjarenplan(wijziging)
     "https://data.vlaanderen.be/id/concept/BesluitType/3fcf7dba-2e5b-4955-a489-6dd8285c013b":
