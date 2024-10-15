@@ -38,3 +38,10 @@ export function serializeTriplePart(triplePart){
     return sparqlEscapeString(triplePart.value);
   }
 }
+
+export function sendTurtleResponse(res, triples) {
+  const nTriples = triples.map(t => serializeTriple(t)) || [];
+
+  res.set('Content-Type', 'text/turtle');
+  return res.send(nTriples.join('\n'));
+}

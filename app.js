@@ -1,9 +1,9 @@
 import { app } from 'mu';
 import { querySudo } from '@lblod/mu-auth-sudo';
 import { sparqlEscapeUri } from 'mu';
-import { serializeTriple } from './utils';
 import { bestuurseenheidForSession, getRelatedToCKB, getEenheidForDecision, getRelatedDecisionType, prepareQuery } from './query-utils';
 import { sessionUri } from './middlewares.js';
+import { sendTurtleResponse } from './utils.js';
 
 const BYPASS_HOP_CENTRAAL_BESTUUR = process.env.BYPASS_HOP_CENTRAAL_BESTUUR || false;
 
@@ -85,10 +85,7 @@ app.get('/related-document-information', async function (req, res) {
     // execute query
     // TODO: Here we could add a hook to connect to vendor-API if we need to.
     const triples = (await querySudo(query))?.results?.bindings || [];
-    const nTriples = triples.map(t => serializeTriple(t)) || [];
-
-    res.set('Content-Type', 'text/turtle');
-    return res.send(nTriples.join('\n'));
+    return sendTurtleResponse(res, triples);
   }
   catch (error) {
     return res.status(500).json({ error: error.message });
@@ -136,10 +133,7 @@ app.get('/search-documents', async function (req, res) {
     // execute query
     // TODO: Here we could add a hook to connect to vendor-API if we need to.
     const triples = (await querySudo(query))?.results?.bindings || [];
-    const nTriples = triples.map(t => serializeTriple(t)) || [];
-
-    res.set('Content-Type', 'text/turtle');
-    return res.send(nTriples.join('\n'));
+    return sendTurtleResponse(res, triples);
   }
   catch (error) {
     return res.status(500).json({ error: error.message });
@@ -172,11 +166,9 @@ app.get('/document-information', async function (req, res) {
     // execute query
     // TODO: Here we could add a hook to connect to vendor-API if we need to.
     const triples = (await querySudo(query))?.results?.bindings || [];
-    const nTriples = triples.map(t => serializeTriple(t)) || [];
-
-    res.set('Content-Type', 'text/turtle');
-    return res.send(nTriples.join('\n'));
+    return sendTurtleResponse(res, triples);
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
 });
+
