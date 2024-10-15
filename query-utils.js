@@ -121,10 +121,38 @@ export function getRelatedDecisionType( decisionType, hasCKB ) {
 
 }
 
-export function prepareQuery( { fromEenheid, forEenheid, ckbUri, decisionTypeData, forDecision }) {
+export function ckbDecisionTypeToRelatedType(decisionType) {
+  // See: https://docs.google.com/spreadsheets/d/1DIQkJTCy3Z16xsZaE2QFOhXCQBDKS4ifeYV_592DxRw/edit?gid=1195904946#gid=1195904946
+
+  const ckbDecisionTypes = {
+    // Advies bij jaarrekening eredienstbestuur
+    "https://data.vlaanderen.be/id/concept/BesluitDocumentType/672bf096-dccd-40af-ab60-bd7de15cc461":
+      // Jaarrekening.
+      "https://data.vlaanderen.be/id/concept/BesluitType/e44c535d-4339-4d15-bdbf-d4be6046de2c",
+
+    // Budgetten(wijzigingen) - Indiening bij representatief orgaan
+    "https://data.vlaanderen.be/id/concept/BesluitDocumentType/18833df2-8c9e-4edd-87fd-b5c252337349":
+      // Budget(wijziging) - Indiening bij centraal bestuur of representatief orgaan
+      "https://data.vlaanderen.be/doc/concept/BesluitType/d463b6d1-c207-4c1a-8c08-f2c7dd1fa53b",
+
+    // Budgetten(wijzigingen) - Indiening bij toezichthoudende gemeente of provincie
+    "https://data.vlaanderen.be/id/concept/BesluitDocumentType/ce569d3d-25ff-4ce9-a194-e77113597e29":
+      // Budget(wijziging) - Indiening bij centraal bestuur of representatief orgaan
+      "https://data.vlaanderen.be/doc/concept/BesluitType/d463b6d1-c207-4c1a-8c08-f2c7dd1fa53b",
+
+    // Meerjarenplannen(wijzigingen) van de besturen van de eredienst
+    "https://data.vlaanderen.be/id/concept/BesluitDocumentType/2c9ada23-1229-4c7e-a53e-acddc9014e4e":
+      // Meerjarenplan(aanpassing)
+      "https://data.vlaanderen.be/id/concept/BesluitType/f56c645d-b8e1-4066-813d-e213f5bc529f",
+  };
+
+  return ckbDecisionTypes[decisionType];
+}
+
+export function prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData, forDecision }) {
   let query;
 
-  if(decisionTypeData.ckbSpecificDdecisionType) {
+  if (decisionTypeData.ckbSpecificDdecisionType) {
     query = `
       PREFIX dcterms: <http://purl.org/dc/terms/>
       PREFIX prov: <http://www.w3.org/ns/prov#>
@@ -145,44 +173,44 @@ export function prepareQuery( { fromEenheid, forEenheid, ckbUri, decisionTypeDat
       WHERE {
 
        ${fromEenheid ?
-           `
+        `
             VALUES ?eenheid {
               ${sparqlEscapeUri(fromEenheid)}
             }
            `: ''
-        }
+      }
 
        ${forEenheid ?
-           `
+        `
             VALUES ?eredienst {
               ${sparqlEscapeUri(forEenheid)}
             }
            `: ''
-        }
+      }
 
        ${decisionTypeData.decisionType ?
-          `
+        `
             VALUES ?besluitType {
               ${sparqlEscapeUri(decisionTypeData.decisionType)}
             }
           `: ''
-        }
+      }
 
        ${forDecision ?
-          `
+        `
             VALUES ?childDecision {
               ${sparqlEscapeUri(forDecision)}
             }
           `: ''
-        }
+      }
 
        ${ckbUri ?
-          `
+        `
             VALUES ?ckb {
               ${sparqlEscapeUri(ckbUri)}
             }
           `: ''
-        }
+      }
 
         ?betrokkenBestuur <http://www.w3.org/ns/org#organization> ?eredienst.
         ?eenheid <http://data.lblod.info/vocabularies/erediensten/betrokkenBestuur> ?betrokkenBestuur.
@@ -249,36 +277,36 @@ export function prepareQuery( { fromEenheid, forEenheid, ckbUri, decisionTypeDat
       WHERE {
 
        ${fromEenheid ?
-           `
+        `
             VALUES ?eenheid {
               ${sparqlEscapeUri(fromEenheid)}
             }
            `: ''
-        }
+      }
 
        ${forEenheid ?
-           `
+        `
             VALUES ?eredienst {
               ${sparqlEscapeUri(forEenheid)}
             }
            `: ''
-        }
+      }
 
        ${decisionTypeData.decisionType ?
-          `
+        `
             VALUES ?besluitType {
               ${sparqlEscapeUri(decisionTypeData.decisionType)}
             }
           `: ''
-        }
+      }
 
        ${forDecision ?
-          `
+        `
             VALUES ?subject {
               ${sparqlEscapeUri(forDecision)}
             }
           `: ''
-        }
+      }
 
         ?betrokkenBestuur <http://www.w3.org/ns/org#organization> ?eredienst.
         ?eenheid <http://data.lblod.info/vocabularies/erediensten/betrokkenBestuur> ?betrokkenBestuur.
@@ -313,4 +341,75 @@ export function prepareQuery( { fromEenheid, forEenheid, ckbUri, decisionTypeDat
   }
 
   return query;
+}
+
+export function prepareCKBSearchQuery({ fromEenheid, forEenheid, decisionType }) {
+  return `
+    PREFIX dcterms: <http://purl.org/dc/terms/>
+    PREFIX prov: <http://www.w3.org/ns/prov#>
+    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+    PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
+    PREFIX mu: <http://mu.semte.ch/vocabularies/core/>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+    CONSTRUCT {
+      ?subject a ?what;
+        skos:prefLabel ?displayLabel ;
+        <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#sentDate> ?dateSent ;
+        <http://lblod.data.gift/vocabularies/besluit/submission/form-data/sessionStartedAtTime> ?sessionStarted ;
+        <http://purl.org/pav/createdBy> ?forEenheid ;
+        rdfs:seeAlso ?seeAlsoUrl .
+
+        ?forEenheid skos:prefLabel ?eredienstLabel .
+    } WHERE {
+      VALUES ?forEenheid {
+        ${sparqlEscapeUri(forEenheid)}
+        <http://data.lblod.info/id/besturenVanDeEredienst/5a04126b0c2c7b04bf3e01f69fffa936>
+      }
+
+      VALUES ?fromEenheid {
+        ${sparqlEscapeUri(fromEenheid)}
+      }
+
+      VALUES ?besluitType {
+        ${sparqlEscapeUri(decisionType)}
+      }
+
+      ?fromEenheid <http://www.w3.org/ns/org#hasSubOrganization> ?forEenheid .
+
+      ?submission a <http://rdf.myexperiment.org/ontologies/base/Submission> ;
+      mu:uuid ?submissionUuid ;
+      <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#sentDate> ?dateSent ;
+      dcterms:subject ?subject ;
+      <http://purl.org/pav/createdBy> ?forEenheid ;
+      prov:generated ?formData .
+
+      ?forEenheid skos:prefLabel ?eredienstLabel .
+
+      ?subject a ?what .
+
+      ?formData
+        <http://lblod.data.gift/vocabularies/besluit/submission/form-data/sessionStartedAtTime>
+          |
+          <http://mu.semte.ch/vocabularies/ext/sessionStartedAtTime>  ?sessionStarted ;
+
+        dcterms:type ?besluitType .
+
+      ?besluitType skos:prefLabel ?besluitTypeLabel .
+
+      BIND(IRI(CONCAT("${WORSHIP_DECISIONS_BASE_URL}", STR(?submissionUuid))) as ?seeAlsoUrl)
+      BIND(STRBEFORE(STR(?dateSent), "T") AS ?niceDateSent)
+      BIND(STRBEFORE(STR(?sessionStarted), "T") AS ?niceSessionStarted)
+      BIND(CONCAT(?besluitTypeLabel, " verstuurd op ", ?niceDateSent, " voor zittingsdatum ", ?niceSessionStarted) as ?displayLabel)
+    }
+  `;
+}
+
+export async function isCKB(eenheidUri) {
+  const queryStr = `
+    ASK {
+      ${sparqlEscapeUri(eenheidUri)} a <http://data.lblod.info/vocabularies/erediensten/CentraalBestuurVanDeEredienst> .
+    }`
+
+  return (await querySudo(queryStr)).boolean;
 }

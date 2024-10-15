@@ -1,9 +1,17 @@
 import { app } from 'mu';
 import { querySudo } from '@lblod/mu-auth-sudo';
-import { sparqlEscapeUri } from 'mu';
-import { bestuurseenheidForSession, getRelatedToCKB, getEenheidForDecision, getRelatedDecisionType, prepareQuery } from './query-utils';
+import { 
+  bestuurseenheidForSession,
+  getRelatedToCKB,
+  getEenheidForDecision,
+  getRelatedDecisionType,
+  prepareQuery,
+  isCKB,
+  ckbDecisionTypeToRelatedType,
+  prepareCKBSearchQuery 
+} from './query-utils';
 import { sessionUri } from './middlewares.js';
-import { sendTurtleResponse } from './utils.js';
+import { invalidDecisionTypeError, sendTurtleResponse } from './utils.js';
 
 const BYPASS_HOP_CENTRAAL_BESTUUR = process.env.BYPASS_HOP_CENTRAAL_BESTUUR || false;
 
@@ -60,9 +68,7 @@ app.get('/related-document-information', async function (req, res) {
       const decisionTypeData = getRelatedDecisionType(forDecisionType, ckbUri);
 
       if (!decisionTypeData.decisionType) {
-        return res.status(400).json({
-          error: `No related document/decisionType found ${forDecisionType}. Aborting`
-        });
+        return invalidDecisionTypeError(res, forDecisionType);
       }
 
       query = prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData });
@@ -94,7 +100,6 @@ app.get('/related-document-information', async function (req, res) {
 
 app.get('/search-documents', async function (req, res) {
   try {
-    // Get the related decisions for specific type & bestuurseenheid provided in the query parameters `?forDecisionType=..&?forEenheid=...
     const forDecisionType = req.query.forDecisionType;
     const forEenheid = req.query.forEenheid;
 
@@ -105,37 +110,47 @@ app.get('/search-documents', async function (req, res) {
     }
 
     const fromEenheid = await bestuurseenheidForSession(req.sessionUri);
+
     if (!fromEenheid) {
       return res.status(400).json({
         error: "No eenheid found for mu-session-id. Aborting"
       });
     }
 
-    // Figure out whether Eenheid is related to CKB
-    let ckbUri = await getRelatedToCKB(forEenheid);
+    let query;
 
-    if (BYPASS_HOP_CENTRAAL_BESTUUR) {
-      console.warn(`Skipping extra hop centraal bestuur. This should only be used in development mode.`);
-      ckbUri = null;
+    if (await isCKB(fromEenheid)) {
+      const relatedDecisionType = ckbDecisionTypeToRelatedType(forDecisionType);
+
+      if (!relatedDecisionType) {
+        return invalidDecisionTypeError(res, forDecisionType);
+      }
+
+      query = prepareCKBSearchQuery({ fromEenheid, forEenheid, decisionType: relatedDecisionType });
+    } else {
+      // Figure out whether Eenheid is related to CKB
+      let ckbUri = await getRelatedToCKB(forEenheid);
+
+      if (BYPASS_HOP_CENTRAAL_BESTUUR) {
+        console.warn(`Skipping extra hop centraal bestuur. This should only be used in development mode.`);
+        ckbUri = null;
+      }
+
+      // Get decision type to request
+      const decisionTypeData = getRelatedDecisionType(forDecisionType, ckbUri);
+
+      if (!decisionTypeData.decisionType) {
+        return invalidDecisionTypeError(res, forDecisionType);
+      }
+
+      query = prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData });
     }
-
-    // Get decision type to request
-    const decisionTypeData = getRelatedDecisionType(forDecisionType, ckbUri);
-
-    if (!decisionTypeData.decisionType) {
-      return res.status(400).json({
-        error: `No related document/decisionType found ${forDecisionType}. Aborting`
-      });
-    }
-
-    const query = prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData });
 
     // execute query
     // TODO: Here we could add a hook to connect to vendor-API if we need to.
     const triples = (await querySudo(query))?.results?.bindings || [];
     return sendTurtleResponse(res, triples);
-  }
-  catch (error) {
+  } catch (error) {
     return res.status(500).json({ error: error.message });
   }
 });

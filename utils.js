@@ -45,3 +45,9 @@ export function sendTurtleResponse(res, triples) {
   res.set('Content-Type', 'text/turtle');
   return res.send(nTriples.join('\n'));
 }
+
+export function invalidDecisionTypeError(res, decisionType) {
+  return res.status(400).json({
+    error: `No related document/decisionType found ${decisionType}. Aborting`
+  });
+}
