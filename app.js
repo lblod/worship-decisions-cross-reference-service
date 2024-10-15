@@ -8,11 +8,13 @@ import { sessionUri } from './middlewares.js';
 const BYPASS_HOP_CENTRAAL_BESTUUR = process.env.BYPASS_HOP_CENTRAAL_BESTUUR || false;
 
 app.use(sessionUri);
-app.get('/hello', function( req, res ) {
-  res.send('Hello from worship-decisions-cross-reference-service');
-} );
 
-app.get('/related-document-information', async function( req, res ) {
+app.get('/hello', function (req, res) {
+  res.send('Hello from worship-decisions-cross-reference-service');
+});
+
+// TODO: Remove this handler once we create a new release that contains the other route handles as well.
+app.get('/related-document-information', async function (req, res) {
   try {
     // Get the related decisions for specific type & bestuurseenheid provided in the query parameters `?forDecisionType=..&?forEenheid=...
     const forDecisionType = req.query.forDecisionType;
@@ -25,7 +27,7 @@ app.get('/related-document-information', async function( req, res ) {
       });
     }
 
-    if(forDecision && !forDecisionType) {
+    if (forDecision && !forDecisionType) {
       return res.status(400).json({
         error: `Missing required query parameters.
                 If forDecision is provided, we expect forDecisionType too.`
@@ -36,28 +38,28 @@ app.get('/related-document-information', async function( req, res ) {
     //  we need to calculate extra parameters for the query, so we can provide a list of options.
     let query = '';
 
-    if(!forDecision) {
+    if (!forDecision) {
 
       const fromEenheid = await bestuurseenheidForSession(req.sessionUri);
 
-      if(!fromEenheid) {
+      if (!fromEenheid) {
         return res.status(400).json({
           error: "No eenheid found for mu-session-id. Aborting"
         });
       }
 
       // Figure out whether Eenheid is related to CKB
-      let ckbUri = await getRelatedToCKB( forEenheid );
+      let ckbUri = await getRelatedToCKB(forEenheid);
 
-      if( BYPASS_HOP_CENTRAAL_BESTUUR ) {
+      if (BYPASS_HOP_CENTRAAL_BESTUUR) {
         console.warn(`Skipping extra hop centraal bestuur. This should only be used in development mode.`);
         ckbUri = null;
       }
 
       // Get decision type to request
-      const decisionTypeData = getRelatedDecisionType( forDecisionType, ckbUri );
+      const decisionTypeData = getRelatedDecisionType(forDecisionType, ckbUri);
 
-      if(!decisionTypeData.decisionType) {
+      if (!decisionTypeData.decisionType) {
         return res.status(400).json({
           error: `No related document/decisionType found ${forDecisionType}. Aborting`
         });
@@ -70,14 +72,14 @@ app.get('/related-document-information', async function( req, res ) {
       const eenheid = await getEenheidForDecision(forDecision);
       let ckbUri = await getRelatedToCKB(eenheid);
 
-      if( BYPASS_HOP_CENTRAAL_BESTUUR ) {
+      if (BYPASS_HOP_CENTRAAL_BESTUUR) {
         console.warn(`Skipping extra hop centraal bestuur. This should only be used in development mode.`);
         ckbUri = null;
       }
 
-      const decisionTypeData = getRelatedDecisionType( forDecisionType, ckbUri );
+      const decisionTypeData = getRelatedDecisionType(forDecisionType, ckbUri);
 
-      query = prepareQuery({ forDecision, ckbUri, decisionTypeData } );
+      query = prepareQuery({ forDecision, ckbUri, decisionTypeData });
     }
 
     // execute query
@@ -89,6 +91,92 @@ app.get('/related-document-information', async function( req, res ) {
     return res.send(nTriples.join('\n'));
   }
   catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/search-documents', async function (req, res) {
+  try {
+    // Get the related decisions for specific type & bestuurseenheid provided in the query parameters `?forDecisionType=..&?forEenheid=...
+    const forDecisionType = req.query.forDecisionType;
+    const forEenheid = req.query.forEenheid;
+
+    if (!forDecisionType || !forEenheid) {
+      return res.status(400).json({
+        error: "Missing required query parameters. Please provide 'forDecisionType' and 'forEenheid'."
+      });
+    }
+
+    const fromEenheid = await bestuurseenheidForSession(req.sessionUri);
+    if (!fromEenheid) {
+      return res.status(400).json({
+        error: "No eenheid found for mu-session-id. Aborting"
+      });
+    }
+
+    // Figure out whether Eenheid is related to CKB
+    let ckbUri = await getRelatedToCKB(forEenheid);
+
+    if (BYPASS_HOP_CENTRAAL_BESTUUR) {
+      console.warn(`Skipping extra hop centraal bestuur. This should only be used in development mode.`);
+      ckbUri = null;
+    }
+
+    // Get decision type to request
+    const decisionTypeData = getRelatedDecisionType(forDecisionType, ckbUri);
+
+    if (!decisionTypeData.decisionType) {
+      return res.status(400).json({
+        error: `No related document/decisionType found ${forDecisionType}. Aborting`
+      });
+    }
+
+    const query = prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData });
+
+    // execute query
+    // TODO: Here we could add a hook to connect to vendor-API if we need to.
+    const triples = (await querySudo(query))?.results?.bindings || [];
+    const nTriples = triples.map(t => serializeTriple(t)) || [];
+
+    res.set('Content-Type', 'text/turtle');
+    return res.send(nTriples.join('\n'));
+  }
+  catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/document-information', async function (req, res) {
+  try {
+    const forDecisionType = req.query.forDecisionType;
+    const forDecision = req.query.forRelatedDecision;
+
+    if (forDecision && !forDecisionType) {
+      return res.status(400).json({
+        error: `Missing required query parameters. Both "forDecision" and "forDecisionType" are required.`
+      });
+    }
+
+    const eenheid = await getEenheidForDecision(forDecision);
+    let ckbUri = await getRelatedToCKB(eenheid);
+
+    if (BYPASS_HOP_CENTRAAL_BESTUUR) {
+      console.warn(`Skipping extra hop centraal bestuur. This should only be used in development mode.`);
+      ckbUri = null;
+    }
+
+    const decisionTypeData = getRelatedDecisionType(forDecisionType, ckbUri);
+
+    const query = prepareQuery({ forDecision, ckbUri, decisionTypeData });
+
+    // execute query
+    // TODO: Here we could add a hook to connect to vendor-API if we need to.
+    const triples = (await querySudo(query))?.results?.bindings || [];
+    const nTriples = triples.map(t => serializeTriple(t)) || [];
+
+    res.set('Content-Type', 'text/turtle');
+    return res.send(nTriples.join('\n'));
+  } catch (error) {
     return res.status(500).json({ error: error.message });
   }
 });
