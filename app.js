@@ -3,9 +3,11 @@ import { querySudo } from '@lblod/mu-auth-sudo';
 import { sparqlEscapeUri } from 'mu';
 import { serializeTriple } from './utils';
 import { bestuurseenheidForSession, getRelatedToCKB, getEenheidForDecision, getRelatedDecisionType, prepareQuery } from './query-utils';
+import { sessionUri } from './middlewares.js';
 
 const BYPASS_HOP_CENTRAAL_BESTUUR = process.env.BYPASS_HOP_CENTRAAL_BESTUUR || false;
 
+app.use(sessionUri);
 app.get('/hello', function( req, res ) {
   res.send('Hello from worship-decisions-cross-reference-service');
 } );
@@ -30,22 +32,13 @@ app.get('/related-document-information', async function( req, res ) {
       });
     }
 
-    // Extract from the `mu-session-id` the bestuurseenheid the user is asking for (i.e. security measure)
-    const sessionUri = req.headers['mu-session-id'];
-
-    if (!sessionUri ) {
-      return res.status(400).json({
-        error: "Missing mu-session-id. This call should go through mu-identifier."
-      });
-    }
-
     // If no decision has been provided,
     //  we need to calculate extra parameters for the query, so we can provide a list of options.
     let query = '';
 
     if(!forDecision) {
 
-      const fromEenheid = await bestuurseenheidForSession(sessionUri);
+      const fromEenheid = await bestuurseenheidForSession(req.sessionUri);
 
       if(!fromEenheid) {
         return res.status(400).json({
