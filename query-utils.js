@@ -133,12 +133,12 @@ export function ckbDecisionTypeToRelatedType(decisionType) {
     // Budgetten(wijzigingen) - Indiening bij representatief orgaan
     "https://data.vlaanderen.be/id/concept/BesluitDocumentType/18833df2-8c9e-4edd-87fd-b5c252337349":
       // Budget(wijziging) - Indiening bij centraal bestuur of representatief orgaan
-      "https://data.vlaanderen.be/doc/concept/BesluitType/d463b6d1-c207-4c1a-8c08-f2c7dd1fa53b",
+      "https://data.vlaanderen.be/id/concept/BesluitType/d463b6d1-c207-4c1a-8c08-f2c7dd1fa53b",
 
     // Budgetten(wijzigingen) - Indiening bij toezichthoudende gemeente of provincie
     "https://data.vlaanderen.be/id/concept/BesluitDocumentType/ce569d3d-25ff-4ce9-a194-e77113597e29":
-      // Budget(wijziging) - Indiening bij centraal bestuur of representatief orgaan
-      "https://data.vlaanderen.be/doc/concept/BesluitType/d463b6d1-c207-4c1a-8c08-f2c7dd1fa53b",
+      // Budget(wijziging) - Indiening bij toezichthoudende gemeente of provincie.
+      "https://data.vlaanderen.be/id/concept/BesluitType/d85218e2-a75f-4a30-9182-512b5c9dd1b2",
 
     // Meerjarenplannen(wijzigingen) van de besturen van de eredienst
     "https://data.vlaanderen.be/id/concept/BesluitDocumentType/2c9ada23-1229-4c7e-a53e-acddc9014e4e":
