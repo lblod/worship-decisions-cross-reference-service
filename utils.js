@@ -51,3 +51,7 @@ export function invalidDecisionTypeError(res, decisionType) {
     error: `No related document/decisionType found ${decisionType}. Aborting`
   });
 }
+
+export function getSessionUri(req) {
+  return req.headers['mu-session-id'];
+}

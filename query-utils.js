@@ -152,7 +152,7 @@ export function ckbDecisionTypeToRelatedType(decisionType) {
 export function prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData, forDecision }) {
   let query;
 
-  if (decisionTypeData.ckbSpecificDdecisionType) {
+  if (decisionTypeData?.ckbSpecificDdecisionType) {
     query = `
       PREFIX dcterms: <http://purl.org/dc/terms/>
       PREFIX prov: <http://www.w3.org/ns/prov#>
@@ -292,7 +292,7 @@ export function prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData
            `: ''
       }
 
-       ${decisionTypeData.decisionType ?
+       ${decisionTypeData?.decisionType ?
         `
             VALUES ?besluitType {
               ${sparqlEscapeUri(decisionTypeData.decisionType)}

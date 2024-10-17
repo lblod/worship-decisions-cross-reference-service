@@ -1,21 +1,20 @@
 import { app } from 'mu';
 import { querySudo } from '@lblod/mu-auth-sudo';
-import { 
-  bestuurseenheidForSession,
+import {
   getRelatedToCKB,
   getEenheidForDecision,
   getRelatedDecisionType,
   prepareQuery,
   isCKB,
   ckbDecisionTypeToRelatedType,
-  prepareCKBSearchQuery 
+  prepareCKBSearchQuery
 } from './query-utils';
-import { sessionUri } from './middlewares.js';
+import { fromEenheid } from './middlewares.js';
 import { invalidDecisionTypeError, sendTurtleResponse } from './utils.js';
 
 const BYPASS_HOP_CENTRAAL_BESTUUR = process.env.BYPASS_HOP_CENTRAAL_BESTUUR || false;
 
-app.use(sessionUri);
+app.use(fromEenheid);
 
 app.get('/hello', function (req, res) {
   res.send('Hello from worship-decisions-cross-reference-service');
@@ -32,14 +31,7 @@ app.get('/search-documents', async function (req, res) {
       });
     }
 
-    const fromEenheid = await bestuurseenheidForSession(req.sessionUri);
-
-    if (!fromEenheid) {
-      return res.status(400).json({
-        error: "No eenheid found for mu-session-id. Aborting"
-      });
-    }
-
+    const fromEenheid = req.fromEenheid;
     let query;
 
     if (await isCKB(fromEenheid)) {
@@ -82,22 +74,25 @@ app.get('/document-information', async function (req, res) {
   try {
     const forDecisionType = req.query.forDecisionType;
     const forDecision = req.query.forRelatedDecision;
-
-    if (forDecision && !forDecisionType) {
-      return res.status(400).json({
-        error: `Missing required query parameters. Both "forDecision" and "forDecisionType" are required.`
-      });
-    }
-
     const eenheid = await getEenheidForDecision(forDecision);
-    let ckbUri = await getRelatedToCKB(eenheid);
+    let ckbUri;
+    let decisionTypeData;
 
-    if (BYPASS_HOP_CENTRAAL_BESTUUR) {
-      console.warn(`Skipping extra hop centraal bestuur. This should only be used in development mode.`);
-      ckbUri = null;
+    if (!(await isCKB(req.fromEenheid))) {
+      if (forDecision && !forDecisionType) {
+        return res.status(400).json({
+          error: `Missing required query parameters. Both "forDecision" and "forDecisionType" are required.`
+        });
+      }
+
+      ckbUri = await getRelatedToCKB(eenheid);
+      if (BYPASS_HOP_CENTRAAL_BESTUUR) {
+        console.warn(`Skipping extra hop centraal bestuur. This should only be used in development mode.`);
+        ckbUri = null;
+      }
+
+      decisionTypeData = getRelatedDecisionType(forDecisionType, ckbUri);
     }
-
-    const decisionTypeData = getRelatedDecisionType(forDecisionType, ckbUri);
 
     const query = prepareQuery({ forDecision, ckbUri, decisionTypeData });
 
