@@ -1,6 +1,6 @@
 {
   "name": "worship-decisions-cross-reference-service",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Microservice allowing to fetch related documents to a provided Decision/DocumentType.",
   "repository": {
     "type": "git",
