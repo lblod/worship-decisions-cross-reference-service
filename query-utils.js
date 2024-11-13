@@ -4,6 +4,8 @@ import { sparqlEscapeUri } from 'mu';
 const WORSHIP_DECISIONS_BASE_URL = process.env.WORSHIP_DECISIONS_BASE_URL
       || "https://databankerediensten.lokaalbestuur.vlaanderen.be/search/submissions/";
 
+const SCOPE_SUBMISSIONS_TO_ONE_GRAPH = process.env.SCOPE_SUBMISSIONS_TO_ONE_GRAPH == 'true' ? true : false ;
+
 export async function bestuurseenheidForSession( sessionUri ) {
   const queryStr = `
 
@@ -172,23 +174,23 @@ export function prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData
       }
       WHERE {
 
-       ${fromEenheid ?
+      ${fromEenheid ?
         `
             VALUES ?eenheid {
               ${sparqlEscapeUri(fromEenheid)}
             }
-           `: ''
+        `: ''
       }
 
-       ${forEenheid ?
+      ${forEenheid ?
         `
             VALUES ?eredienst {
               ${sparqlEscapeUri(forEenheid)}
             }
-           `: ''
+        `: ''
       }
 
-       ${decisionTypeData.decisionType ?
+      ${decisionTypeData.decisionType ?
         `
             VALUES ?besluitType {
               ${sparqlEscapeUri(decisionTypeData.decisionType)}
@@ -196,7 +198,7 @@ export function prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData
           `: ''
       }
 
-       ${forDecision ?
+      ${forDecision ?
         `
             VALUES ?childDecision {
               ${sparqlEscapeUri(forDecision)}
@@ -204,7 +206,7 @@ export function prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData
           `: ''
       }
 
-       ${ckbUri ?
+      ${ckbUri ?
         `
             VALUES ?ckb {
               ${sparqlEscapeUri(ckbUri)}
@@ -217,27 +219,26 @@ export function prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData
 
         ?ckb <http://www.w3.org/ns/org#hasSubOrganization> ?eredienst.
 
+        ?eredienst skos:prefLabel ?eredienstLabel.
+        ?ckb skos:prefLabel ?ckbLabel.
+        ?besluitType skos:prefLabel ?besluitTypeLabel.
 
-        ?submission a <http://rdf.myexperiment.org/ontologies/base/Submission>;
-          mu:uuid ?submissionUuid;
-          <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#sentDate> ?dateSent;
-          dcterms:subject ?subject;
-          <http://purl.org/pav/createdBy> ?ckb;
-          prov:generated ?formData.
+        ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `GRAPH ?g {`: ''}
 
-          ?eredienst skos:prefLabel ?eredienstLabel.
-          ?ckb skos:prefLabel ?ckbLabel.
-
+          ?submission a <http://rdf.myexperiment.org/ontologies/base/Submission>;
+            mu:uuid ?submissionUuid;
+            <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#sentDate> ?dateSent;
+            dcterms:subject ?subject;
+            <http://purl.org/pav/createdBy> ?ckb;
+            prov:generated ?formData.
 
           ?formData
             dcterms:type ?besluitType;
             dcterms:relation ?childDecision.
 
-          ?besluitType skos:prefLabel ?besluitTypeLabel.
-
           ?childSubmission dcterms:subject ?childDecision;
-               <http://purl.org/pav/createdBy> ?eredienst;
-               prov:generated ?childFormData.
+              <http://purl.org/pav/createdBy> ?eredienst;
+              prov:generated ?childFormData.
 
           ?childFormData <http://mu.semte.ch/vocabularies/ext/decisionType> ?childDecisionType.
 
@@ -245,13 +246,15 @@ export function prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData
 
           ?childDecision a ?what.
 
-          BIND(CONCAT(?ckbLabel, " namens ", ?eredienstLabel) as ?niceIngezondenDoor)
+        ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `}`: ''}
 
-          BIND(IRI(CONCAT("${WORSHIP_DECISIONS_BASE_URL}", STR(?submissionUuid))) as ?seeAlsoUrl)
+        BIND(CONCAT(?ckbLabel, " namens ", ?eredienstLabel) as ?niceIngezondenDoor)
 
-          BIND(STRBEFORE(STR(?dateSent), "T") AS ?niceDateSent)
-          BIND(CONCAT(?childDecisionTypeLabel, " van ", ?eredienstLabel, " gebundeld en verstuurd door ", ?ckbLabel,
-                       " op ", ?niceDateSent) as ?displayLabel)
+        BIND(IRI(CONCAT("${WORSHIP_DECISIONS_BASE_URL}", STR(?submissionUuid))) as ?seeAlsoUrl)
+
+        BIND(STRBEFORE(STR(?dateSent), "T") AS ?niceDateSent)
+        BIND(CONCAT(?childDecisionTypeLabel, " van ", ?eredienstLabel, " gebundeld en verstuurd door ", ?ckbLabel,
+                    " op ", ?niceDateSent) as ?displayLabel)
       }`;
   }
   else {
@@ -311,31 +314,34 @@ export function prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData
         ?betrokkenBestuur <http://www.w3.org/ns/org#organization> ?eredienst.
         ?eenheid <http://data.lblod.info/vocabularies/erediensten/betrokkenBestuur> ?betrokkenBestuur.
 
-        ?submission a <http://rdf.myexperiment.org/ontologies/base/Submission>;
-          mu:uuid ?submissionUuid;
-          <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#sentDate> ?dateSent;
-          dcterms:subject ?subject;
-          <http://purl.org/pav/createdBy> ?eredienst;
-          prov:generated ?formData.
+        ?eredienst skos:prefLabel ?eredienstLabel.
 
-          ?eredienst skos:prefLabel ?eredienstLabel.
+        ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `GRAPH ?g {`: ''}
+
+          ?submission a <http://rdf.myexperiment.org/ontologies/base/Submission>;
+            mu:uuid ?submissionUuid;
+            <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#sentDate> ?dateSent;
+            dcterms:subject ?subject;
+            <http://purl.org/pav/createdBy> ?eredienst;
+            prov:generated ?formData.
 
           ?subject a ?what.
 
           ?formData
             <http://lblod.data.gift/vocabularies/besluit/submission/form-data/sessionStartedAtTime>
               |
-              <http://mu.semte.ch/vocabularies/ext/sessionStartedAtTime>	 ?sessionStarted;
-
+              <http://mu.semte.ch/vocabularies/ext/sessionStartedAtTime> ?sessionStarted;
             dcterms:type ?besluitType.
 
-          ?besluitType skos:prefLabel ?besluitTypeLabel.
+        ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `}`: ''}
 
-          BIND(IRI(CONCAT("${WORSHIP_DECISIONS_BASE_URL}", STR(?submissionUuid))) as ?seeAlsoUrl)
+        ?besluitType skos:prefLabel ?besluitTypeLabel.
 
-          BIND(STRBEFORE(STR(?dateSent), "T") AS ?niceDateSent)
-          BIND(STRBEFORE(STR(?sessionStarted), "T") AS ?niceSessionStarted)
-          BIND(CONCAT(?besluitTypeLabel, " verstuurd op ", ?niceDateSent, " voor zittingsdatum ", ?niceSessionStarted) as ?displayLabel)
+        BIND(IRI(CONCAT("${WORSHIP_DECISIONS_BASE_URL}", STR(?submissionUuid))) as ?seeAlsoUrl)
+
+        BIND(STRBEFORE(STR(?dateSent), "T") AS ?niceDateSent)
+        BIND(STRBEFORE(STR(?sessionStarted), "T") AS ?niceSessionStarted)
+        BIND(CONCAT(?besluitTypeLabel, " verstuurd op ", ?niceDateSent, " voor zittingsdatum ", ?niceSessionStarted) as ?displayLabel)
       }
     `;
   }
