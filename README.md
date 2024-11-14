@@ -9,9 +9,11 @@ Service to retrieve related document information for decisions, enabling users t
 This endpoint fetches related document information based on the provided query parameters.
 
 #### Request
+
 ```
 GET /related-document-information
 ```
+
 #### Query Parameters
 
 - `forDecisionType`: (Optional) The type of decision to fetch related documents for.
@@ -21,9 +23,14 @@ GET /related-document-information
 Note: If `forRelatedDecision` is not provided, both `forDecisionType` and `forEenheid` are mandatory.
 
 Note: It will only work when the call goes through mu-identifier.
+
 #### Enviroment variables
+
 - `WORSHIP_DECISIONS_BASE_URL`: Base url where more information may be found about the related decision. It's a link to the connectected submission.
       Defaults to "https://databankerediensten.lokaalbestuur.vlaanderen.be/search/submissions/"
+- `SCOPE_SUBMISSIONS_TO_ONE_GRAPH`: Force the submissions to come from the same graph. Mainly used for applications with a lot of graphs, to avoid query timeouts.
+      Defaults to "false"
+
 #### Response
 
 - Status 200: Returns the related document information in Turtle format.
