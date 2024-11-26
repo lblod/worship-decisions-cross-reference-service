@@ -6,6 +6,7 @@ import {
   getRelatedDecisionType,
   prepareQuery,
   isCKB,
+  isDecidableByCKB,
   ckbDecisionTypeToRelatedType,
   prepareCKBSearchQuery
 } from './query-utils';
@@ -75,10 +76,16 @@ app.get('/document-information', async function (req, res) {
     const forDecisionType = req.query.forDecisionType;
     const forDecision = req.query.forRelatedDecision;
     const eenheid = await getEenheidForDecision(forDecision);
+
     let ckbUri;
     let decisionTypeData;
 
-    if (!(await isCKB(req.fromEenheid))) {
+    const isLoggedInUserCKB = await isCKB(req.fromEenheid);
+    const isDecisionTypeDecidableByCKB = await isDecidableByCKB(forDecisionType);
+
+    // We need more details when the logged in user is not a CKB and when the submission that is
+    // cross-referencing other submissions is also not handled by a CKB.
+    if (!isLoggedInUserCKB && !isDecisionTypeDecidableByCKB) {
       if (forDecision && !forDecisionType) {
         return res.status(400).json({
           error: `Missing required query parameters. Both "forDecision" and "forDecisionType" are required.`
@@ -86,6 +93,7 @@ app.get('/document-information', async function (req, res) {
       }
 
       ckbUri = await getRelatedToCKB(eenheid);
+
       if (BYPASS_HOP_CENTRAAL_BESTUUR) {
         console.warn(`Skipping extra hop centraal bestuur. This should only be used in development mode.`);
         ckbUri = null;
@@ -104,4 +112,3 @@ app.get('/document-information', async function (req, res) {
     return res.status(500).json({ error: error.message });
   }
 });
-

@@ -59,20 +59,19 @@ export async function getEenheidForDecision( decisionUri ) {
 
   const result = (await querySudo(queryStr))?.results?.bindings || [];
   return result[0] ? result[0].eenheid.value : null;
-
 }
 
 export function getRelatedDecisionType( decisionType, hasCKB ) {
   // Mapping differs for some documents only if bestuurseenheid has CKB. 
   if (hasCKB) {
     return {
-      ckbSpecificDdecisionType: true,
+      ckbSpecificDecisionType: true,
       decisionType: crossReferenceMappingsGemeente_CKB_EB[decisionType]
     };
   }
   else {
     return {
-      ckbSpecificDdecisionType: false,
+      ckbSpecificDecisionType: false,
       decisionType: crossReferenceMappingsGemeente_EB[decisionType]
     };
   }
@@ -85,7 +84,7 @@ export function ckbDecisionTypeToRelatedType(decisionType) {
 export function prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData, forDecision }) {
   let query;
 
-  if (decisionTypeData?.ckbSpecificDdecisionType) {
+  if (decisionTypeData?.ckbSpecificDecisionType) {
     query = `
       PREFIX dcterms: <http://purl.org/dc/terms/>
       PREFIX prov: <http://www.w3.org/ns/prov#>
@@ -346,6 +345,15 @@ export async function isCKB(eenheidUri) {
   const queryStr = `
     ASK {
       ${sparqlEscapeUri(eenheidUri)} a <http://data.lblod.info/vocabularies/erediensten/CentraalBestuurVanDeEredienst> .
+    }`
+
+  return (await querySudo(queryStr)).boolean;
+}
+
+export async function isDecidableByCKB(forDecisionType) {
+  const queryStr = `
+    ASK {
+      ${sparqlEscapeUri(forDecisionType)} <http://lblod.data.gift/vocabularies/besluit/decidableBy> <http://data.vlaanderen.be/id/concept/BestuurseenheidClassificatieCode/f9cac08a-13c1-49da-9bcb-f650b0604054> .
     }`
 
   return (await querySudo(queryStr)).boolean;
