@@ -350,10 +350,13 @@ export async function isCKB(eenheidUri) {
   return (await querySudo(queryStr)).boolean;
 }
 
-export async function isDecidableByCKB(forDecisionType) {
+export async function isGemeente(eenheidUri) {
   const queryStr = `
+    PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
+    PREFIX org: <http://www.w3.org/ns/org#>
+
     ASK {
-      ${sparqlEscapeUri(forDecisionType)} <http://lblod.data.gift/vocabularies/besluit/decidableBy> <http://data.vlaanderen.be/id/concept/BestuurseenheidClassificatieCode/f9cac08a-13c1-49da-9bcb-f650b0604054> .
+      ${sparqlEscapeUri(eenheidUri)} besluit:classificatie|org:classification <http://data.vlaanderen.be/id/concept/BestuurseenheidClassificatieCode/5ab0e9b8a3b2ca7c5e000001> .
     }`
 
   return (await querySudo(queryStr)).boolean;

@@ -6,12 +6,15 @@ import {
   getRelatedDecisionType,
   prepareQuery,
   isCKB,
-  isDecidableByCKB,
+  isGemeente,
   ckbDecisionTypeToRelatedType,
   prepareCKBSearchQuery
 } from './query-utils';
 import { fromEenheid } from './middlewares.js';
 import { invalidDecisionTypeError, sendTurtleResponse } from './utils.js';
+import {
+  crossReferenceMappingsGemeente_CKB_EB
+} from './config/cross-reference-mappings';
 
 const BYPASS_HOP_CENTRAAL_BESTUUR = process.env.BYPASS_HOP_CENTRAAL_BESTUUR || false;
 
@@ -77,16 +80,25 @@ app.get('/document-information', async function (req, res) {
     const forDecision = req.query.forRelatedDecision;
     const eenheid = await getEenheidForDecision(forDecision);
 
+    const isLoggedInAsGemeente = await isGemeente(req.fromEenheid);
+    // Trick: if the decision type is both in the keys AND in thevalues of `crossReferenceMappingsGemeente_CKB_EB` ,
+    // then it has to be a CKB decision type.
+    const isSubmissionSentByCKB =
+      Object.values(crossReferenceMappingsGemeente_CKB_EB).some(e => e == forDecisionType)
+      && crossReferenceMappingsGemeente_CKB_EB[forDecisionType];
+
     let ckbUri;
     let decisionTypeData;
 
-    const isLoggedInUserCKB = await isCKB(req.fromEenheid);
-    const isDecisionTypeDecidableByCKB = await isDecidableByCKB(forDecisionType);
+    /*
+      When logged in as a municipality and opening a submission sent by that municipality, we need extra info on whether
+      a CKB exists between the EB and the municipality to pick the correct mapping and triples.
 
-    // We need more details when the logged in user is not a CKB and when the submission that is
-    // cross-referencing other submissions is also not handled by a CKB.
-    if (!isLoggedInUserCKB && !isDecisionTypeDecidableByCKB) {
-      if (forDecision && !forDecisionType) {
+      We exclude the case where, when logged in as a municipality, the user opens a submission that the municipality can
+      view BUT that has been submitted by a different administrative units (in practice, it will always be a CKB).
+    */
+    if (isLoggedInAsGemeente && !isSubmissionSentByCKB) {
+        if (forDecision && !forDecisionType) {
         return res.status(400).json({
           error: `Missing required query parameters. Both "forDecision" and "forDecisionType" are required.`
         });
