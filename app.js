@@ -7,14 +7,12 @@ import {
   prepareQuery,
   isCKB,
   isGemeente,
+  isDecisionTypeFromCKB,
   ckbDecisionTypeToRelatedType,
   prepareCKBSearchQuery
 } from './query-utils';
 import { fromEenheid } from './middlewares.js';
 import { invalidDecisionTypeError, sendTurtleResponse } from './utils.js';
-import {
-  crossReferenceMappingsGemeente_CKB_EB
-} from './config/cross-reference-mappings';
 
 const BYPASS_HOP_CENTRAAL_BESTUUR = process.env.BYPASS_HOP_CENTRAAL_BESTUUR || false;
 
@@ -81,11 +79,7 @@ app.get('/document-information', async function (req, res) {
     const eenheid = await getEenheidForDecision(forDecision);
 
     const isLoggedInAsGemeente = await isGemeente(req.fromEenheid);
-    // Trick: if the decision type is both in the keys AND in thevalues of `crossReferenceMappingsGemeente_CKB_EB` ,
-    // then it has to be a CKB decision type.
-    const isSubmissionSentByCKB =
-      Object.values(crossReferenceMappingsGemeente_CKB_EB).some(e => e == forDecisionType)
-      && crossReferenceMappingsGemeente_CKB_EB[forDecisionType];
+    const isSubmissionSentByCKB = isDecisionTypeFromCKB(forDecisionType);
 
     let ckbUri;
     let decisionTypeData;
