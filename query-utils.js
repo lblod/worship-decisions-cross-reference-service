@@ -59,20 +59,19 @@ export async function getEenheidForDecision( decisionUri ) {
 
   const result = (await querySudo(queryStr))?.results?.bindings || [];
   return result[0] ? result[0].eenheid.value : null;
-
 }
 
 export function getRelatedDecisionType( decisionType, hasCKB ) {
   // Mapping differs for some documents only if bestuurseenheid has CKB. 
   if (hasCKB) {
     return {
-      ckbSpecificDdecisionType: true,
+      ckbSpecificDecisionType: true,
       decisionType: crossReferenceMappingsGemeente_CKB_EB[decisionType]
     };
   }
   else {
     return {
-      ckbSpecificDdecisionType: false,
+      ckbSpecificDecisionType: false,
       decisionType: crossReferenceMappingsGemeente_EB[decisionType]
     };
   }
@@ -82,10 +81,17 @@ export function ckbDecisionTypeToRelatedType(decisionType) {
   return crossReferenceMappingsGemeente_CKB_EB[decisionType];
 }
 
+export function isDecisionTypeFromCKB(decisionType) {
+  // Trick: if the decision type is both in the keys AND in thevalues of `crossReferenceMappingsGemeente_CKB_EB`,
+  // then it has to be a CKB decision type.
+  return Object.values(crossReferenceMappingsGemeente_CKB_EB).some(e => e == decisionType)
+    && crossReferenceMappingsGemeente_CKB_EB[decisionType];
+}
+
 export function prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData, forDecision }) {
   let query;
 
-  if (decisionTypeData?.ckbSpecificDdecisionType) {
+  if (decisionTypeData?.ckbSpecificDecisionType) {
     query = `
       PREFIX dcterms: <http://purl.org/dc/terms/>
       PREFIX prov: <http://www.w3.org/ns/prov#>
@@ -346,6 +352,18 @@ export async function isCKB(eenheidUri) {
   const queryStr = `
     ASK {
       ${sparqlEscapeUri(eenheidUri)} a <http://data.lblod.info/vocabularies/erediensten/CentraalBestuurVanDeEredienst> .
+    }`
+
+  return (await querySudo(queryStr)).boolean;
+}
+
+export async function isGemeente(eenheidUri) {
+  const queryStr = `
+    PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
+    PREFIX org: <http://www.w3.org/ns/org#>
+
+    ASK {
+      ${sparqlEscapeUri(eenheidUri)} besluit:classificatie|org:classification <http://data.vlaanderen.be/id/concept/BestuurseenheidClassificatieCode/5ab0e9b8a3b2ca7c5e000001> .
     }`
 
   return (await querySudo(queryStr)).boolean;

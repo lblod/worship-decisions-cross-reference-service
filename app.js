@@ -6,6 +6,8 @@ import {
   getRelatedDecisionType,
   prepareQuery,
   isCKB,
+  isGemeente,
+  isDecisionTypeFromCKB,
   ckbDecisionTypeToRelatedType,
   prepareCKBSearchQuery
 } from './query-utils';
@@ -75,17 +77,29 @@ app.get('/document-information', async function (req, res) {
     const forDecisionType = req.query.forDecisionType;
     const forDecision = req.query.forRelatedDecision;
     const eenheid = await getEenheidForDecision(forDecision);
+
+    const isLoggedInAsGemeente = await isGemeente(req.fromEenheid);
+    const isSubmissionSentByCKB = isDecisionTypeFromCKB(forDecisionType);
+
     let ckbUri;
     let decisionTypeData;
 
-    if (!(await isCKB(req.fromEenheid))) {
-      if (forDecision && !forDecisionType) {
+    /*
+      When logged in as a municipality and opening a submission sent by that municipality, we need extra info on whether
+      a CKB exists between the EB and the municipality to pick the correct mapping and triples.
+
+      We exclude the case where, when logged in as a municipality, the user opens a submission that the municipality can
+      view BUT that has been submitted by a different administrative units (in practice, it will always be a CKB).
+    */
+    if (isLoggedInAsGemeente && !isSubmissionSentByCKB) {
+        if (forDecision && !forDecisionType) {
         return res.status(400).json({
           error: `Missing required query parameters. Both "forDecision" and "forDecisionType" are required.`
         });
       }
 
       ckbUri = await getRelatedToCKB(eenheid);
+
       if (BYPASS_HOP_CENTRAAL_BESTUUR) {
         console.warn(`Skipping extra hop centraal bestuur. This should only be used in development mode.`);
         ckbUri = null;
@@ -104,4 +118,3 @@ app.get('/document-information', async function (req, res) {
     return res.status(500).json({ error: error.message });
   }
 });
-
