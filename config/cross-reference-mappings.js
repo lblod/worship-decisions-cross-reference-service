@@ -82,15 +82,4 @@ export const crossReferenceMappingsGemeente_CKB_EB = {
   "https://data.vlaanderen.be/id/concept/BesluitDocumentType/2c9ada23-1229-4c7e-a53e-acddc9014e4e":
     // Meerjarenplan(aanpassing)
     "https://data.vlaanderen.be/id/concept/BesluitType/f56c645d-b8e1-4066-813d-e213f5bc529f",
-
-  // Schorsing beslissing eredienstbesturen
-  "https://data.vlaanderen.be/id/concept/BesluitType/b25faa84-3ab5-47ae-98c0-1b389c77b827":
-    // Notulen
-    "https://data.vlaanderen.be/id/concept/BesluitDocumentType/8e791b27-7600-4577-b24e-c7c29e0eb773",
-
-  // Opvragen bijkomende inlichtingen eredienstbesturen (met als gevolg stuiting termijn)
-  "https://data.vlaanderen.be/id/concept/BesluitDocumentType/24743b26-e0fb-4c14-8c82-5cd271289b0e":
-    // Notulen
-    "https://data.vlaanderen.be/id/concept/BesluitDocumentType/8e791b27-7600-4577-b24e-c7c29e0eb773",
 }
-
