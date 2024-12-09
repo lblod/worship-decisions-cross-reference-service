@@ -8,6 +8,7 @@ import {
   isCKB,
   isGemeente,
   isDecisionTypeFromCKB,
+  isCkbRelevantForDecisionType,
   ckbDecisionTypeToRelatedType,
   prepareCKBSearchQuery
 } from './query-utils';
@@ -45,12 +46,18 @@ app.get('/search-documents', async function (req, res) {
 
       query = prepareCKBSearchQuery({ fromEenheid, forEenheid, decisionType: relatedDecisionType });
     } else {
-      // Figure out whether Eenheid is related to CKB
-      let ckbUri = await getRelatedToCKB(forEenheid);
+      // Check if it is relevant to fetch the CKB related to the submission based on decision type
+      const isCkbRelevant = isCkbRelevantForDecisionType(forDecisionType);
+      let ckbUri=null;
 
-      if (BYPASS_HOP_CENTRAAL_BESTUUR) {
-        console.warn(`Skipping extra hop centraal bestuur. This should only be used in development mode.`);
-        ckbUri = null;
+      if (isCkbRelevant) {
+        // Figure out whether the administrative unit is related to CKB
+        ckbUri = await getRelatedToCKB(forEenheid);
+
+        if (BYPASS_HOP_CENTRAAL_BESTUUR) {
+          console.warn(`Skipping extra hop centraal bestuur. This should only be used in development mode.`);
+          ckbUri = null;
+        }
       }
 
       // Get decision type to request
@@ -68,6 +75,7 @@ app.get('/search-documents', async function (req, res) {
     const triples = (await querySudo(query))?.results?.bindings || [];
     return sendTurtleResponse(res, triples);
   } catch (error) {
+    console.log(error);
     return res.status(500).json({ error: error.message });
   }
 });
@@ -98,11 +106,17 @@ app.get('/document-information', async function (req, res) {
         });
       }
 
-      ckbUri = await getRelatedToCKB(eenheid);
+      const isCkbRelevant = isCkbRelevantForDecisionType(forDecisionType);
+      let ckbUri=null;
 
-      if (BYPASS_HOP_CENTRAAL_BESTUUR) {
-        console.warn(`Skipping extra hop centraal bestuur. This should only be used in development mode.`);
-        ckbUri = null;
+      if (isCkbRelevant) {
+        // Figure out whether the administrative unit is related to a CKB or is a CKB itself
+        ckbUri = await isCKB(eenheid) ? eenheid : await getRelatedToCKB(eenheid);
+
+        if (BYPASS_HOP_CENTRAAL_BESTUUR) {
+          console.warn(`Skipping extra hop centraal bestuur. This should only be used in development mode.`);
+          ckbUri = null;
+        }
       }
 
       decisionTypeData = getRelatedDecisionType(forDecisionType, ckbUri);

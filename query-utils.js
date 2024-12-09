@@ -62,19 +62,32 @@ export async function getEenheidForDecision( decisionUri ) {
 }
 
 export function getRelatedDecisionType( decisionType, hasCKB ) {
-  // Mapping differs for some documents only if bestuurseenheid has CKB. 
+  // Mapping differs for some documents only if the bestuurseenheid has a CKB
   if (hasCKB) {
     return {
       ckbSpecificDecisionType: true,
       decisionType: crossReferenceMappingsGemeente_CKB_EB[decisionType]
     };
-  }
-  else {
+  } else {
     return {
       ckbSpecificDecisionType: false,
       decisionType: crossReferenceMappingsGemeente_EB[decisionType]
     };
   }
+}
+
+/*
+  If the decision if of one of the two following types, it doesn't matter if there is a CKB in between the Gemeente
+  and the EB even when the creator of the submission is a CKB.
+  Those types allow cross references directly between Gemeente -> CKB and Gemeente -> EB.
+
+  Types:
+  - Schorsing beslissing eredienstbesturen
+  - Opvragen bijkomende inlichtingen eredienstbesturen (met als gevolg stuiting termijn)
+*/
+export function isCkbRelevantForDecisionType(decisionType) {
+  return decisionType != "https://data.vlaanderen.be/id/concept/BesluitDocumentType/24743b26-e0fb-4c14-8c82-5cd271289b0e"
+    && decisionType != "https://data.vlaanderen.be/id/concept/BesluitType/b25faa84-3ab5-47ae-98c0-1b389c77b827";
 }
 
 export function ckbDecisionTypeToRelatedType(decisionType) {
@@ -110,87 +123,98 @@ export function prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData
           ?eredienst skos:prefLabel ?niceIngezondenDoor.
       }
       WHERE {
-
-      ${fromEenheid ?
-        `
-            VALUES ?eenheid {
-              ${sparqlEscapeUri(fromEenheid)}
+        {
+          SELECT DISTINCT ?childDecision ?childDecisionTypeLabel ?ckbLabel ?what ?eredienst ?eredienstLabel WHERE {
+            ${fromEenheid ?
+              `
+                  VALUES ?eenheid {
+                    ${sparqlEscapeUri(fromEenheid)}
+                  }
+              `: ''
             }
-        `: ''
-      }
 
-      ${forEenheid ?
-        `
-            VALUES ?eredienst {
-              ${sparqlEscapeUri(forEenheid)}
+            ${forEenheid ?
+              `
+                  VALUES ?eredienst {
+                    ${sparqlEscapeUri(forEenheid)}
+                  }
+              `: ''
             }
-        `: ''
-      }
 
-      ${decisionTypeData.decisionType ?
-        `
-            VALUES ?besluitType {
-              ${sparqlEscapeUri(decisionTypeData.decisionType)}
+            ${decisionTypeData.decisionType ?
+              `
+                  VALUES ?besluitType {
+                    ${sparqlEscapeUri(decisionTypeData.decisionType)}
+                  }
+                `: ''
             }
-          `: ''
-      }
 
-      ${forDecision ?
-        `
-            VALUES ?childDecision {
-              ${sparqlEscapeUri(forDecision)}
+            ${forDecision ?
+              `
+                  VALUES ?childDecision {
+                    ${sparqlEscapeUri(forDecision)}
+                  }
+                `: ''
             }
-          `: ''
-      }
 
-      ${ckbUri ?
-        `
-            VALUES ?ckb {
-              ${sparqlEscapeUri(ckbUri)}
+            ${ckbUri ?
+              `
+                  VALUES ?ckb {
+                    ${sparqlEscapeUri(ckbUri)}
+                  }
+                `: ''
             }
-          `: ''
-      }
 
-        ?betrokkenBestuur <http://www.w3.org/ns/org#organization> ?eredienst.
-        ?eenheid <http://data.lblod.info/vocabularies/erediensten/betrokkenBestuur> ?betrokkenBestuur.
+            ?betrokkenBestuur <http://www.w3.org/ns/org#organization> ?eredienst.
+            ?eenheid <http://data.lblod.info/vocabularies/erediensten/betrokkenBestuur> ?betrokkenBestuur.
 
-        ?ckb <http://www.w3.org/ns/org#hasSubOrganization> ?eredienst.
+            ?ckb <http://www.w3.org/ns/org#hasSubOrganization> ?eredienst.
 
-        ?eredienst skos:prefLabel ?eredienstLabel.
-        ?ckb skos:prefLabel ?ckbLabel.
-        ?besluitType skos:prefLabel ?besluitTypeLabel.
+            ?eredienst skos:prefLabel ?eredienstLabel.
+            ?ckb skos:prefLabel ?ckbLabel.
+            ?besluitType skos:prefLabel ?besluitTypeLabel.
 
-        ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `GRAPH ?g {`: ''}
+            ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `GRAPH ?g {`: ''}
 
-          ?submission a <http://rdf.myexperiment.org/ontologies/base/Submission>;
-            mu:uuid ?submissionUuid;
-            <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#sentDate> ?dateSent;
-            dcterms:subject ?subject;
-            <http://purl.org/pav/createdBy> ?ckb;
-            prov:generated ?formData.
+              ?submission a <http://rdf.myexperiment.org/ontologies/base/Submission>;
+                <http://purl.org/pav/createdBy> ?ckb;
+                prov:generated ?formData.
 
-          ?formData
-            dcterms:type ?besluitType;
-            dcterms:relation ?childDecision.
+              ?formData
+                dcterms:type ?besluitType;
+                dcterms:relation ?childDecision.
 
-          ?childSubmission dcterms:subject ?childDecision;
-              <http://purl.org/pav/createdBy> ?eredienst;
-              prov:generated ?childFormData.
+              ?childSubmission dcterms:subject ?childDecision;
+                  <http://purl.org/pav/createdBy> ?eredienst;
+                  prov:generated ?childFormData.
 
-          ?childFormData <http://mu.semte.ch/vocabularies/ext/decisionType> ?childDecisionType.
+              ?childFormData <http://mu.semte.ch/vocabularies/ext/decisionType> ?childDecisionType.
 
-          ?childDecisionType skos:prefLabel ?childDecisionTypeLabel.
+              ?childDecisionType skos:prefLabel ?childDecisionTypeLabel.
 
-          ?childDecision a ?what.
+              ?childDecision a ?what.
 
-        ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `}`: ''}
+            ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `}`: ''}
+          }
+        }
+
+        ?mostRecentParentSubmission prov:generated/dcterms:relation ?childDecision;
+          <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#sentDate> ?dateSent;
+          mu:uuid ?submissionUuid.
+
+        FILTER NOT EXISTS {
+          ?otherParent prov:generated/dcterms:relation ?childDecision;
+            <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#sentDate> ?otherDateSent.
+
+          FILTER(?otherDateSent > ?dateSent)
+        }
 
         BIND(CONCAT(?ckbLabel, " namens ", ?eredienstLabel) as ?niceIngezondenDoor)
 
         BIND(IRI(CONCAT("${WORSHIP_DECISIONS_BASE_URL}", STR(?submissionUuid))) as ?seeAlsoUrl)
 
         BIND(STRBEFORE(STR(?dateSent), "T") AS ?niceDateSent)
-        BIND(CONCAT(?childDecisionTypeLabel, " van ", ?eredienstLabel, " gebundeld en verstuurd door ", ?ckbLabel,
+        BIND(CONCAT(?childDecisionTypeLabel, " van ", ?eredienstLabel, " als laatste gebundeld en verstuurd door ", ?ckbLabel,
                     " op ", ?niceDateSent) as ?displayLabel)
       }`;
   }
