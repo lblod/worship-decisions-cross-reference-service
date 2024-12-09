@@ -114,96 +114,107 @@ export function prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData
       PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
       CONSTRUCT {
-        ?subject a ?what;
+        ?childDecision a ?what;
           skos:prefLabel ?displayLabel;
-          <http://purl.org/pav/createdBy> ?ckb;
+          <http://purl.org/pav/createdBy> ?eredienst;
           <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#sentDate> ?dateSent;
           rdfs:seeAlso ?seeAlsoUrl.
 
-          ?ckb skos:prefLabel ?niceIngezondenDoor.
+          ?eredienst skos:prefLabel ?niceIngezondenDoor.
       }
       WHERE {
-
-      ${fromEenheid ?
-        `
-            VALUES ?eenheid {
-              ${sparqlEscapeUri(fromEenheid)}
+        {
+          SELECT DISTINCT ?childDecision ?childDecisionTypeLabel ?ckbLabel ?what ?eredienst ?eredienstLabel WHERE {
+            ${fromEenheid ?
+              `
+                  VALUES ?eenheid {
+                    ${sparqlEscapeUri(fromEenheid)}
+                  }
+              `: ''
             }
-        `: ''
-      }
 
-      ${forEenheid ?
-        `
-            VALUES ?eredienst {
-              ${sparqlEscapeUri(forEenheid)}
+            ${forEenheid ?
+              `
+                  VALUES ?eredienst {
+                    ${sparqlEscapeUri(forEenheid)}
+                  }
+              `: ''
             }
-        `: ''
-      }
 
-      ${decisionTypeData.decisionType ?
-        `
-            VALUES ?besluitType {
-              ${sparqlEscapeUri(decisionTypeData.decisionType)}
+            ${decisionTypeData.decisionType ?
+              `
+                  VALUES ?besluitType {
+                    ${sparqlEscapeUri(decisionTypeData.decisionType)}
+                  }
+                `: ''
             }
-          `: ''
-      }
 
-      ${forDecision ?
-        `
-            VALUES ?subject {
-              ${sparqlEscapeUri(forDecision)}
+            ${forDecision ?
+              `
+                  VALUES ?childDecision {
+                    ${sparqlEscapeUri(forDecision)}
+                  }
+                `: ''
             }
-          `: ''
-      }
 
-      ${ckbUri ?
-        `
-            VALUES ?ckb {
-              ${sparqlEscapeUri(ckbUri)}
+            ${ckbUri ?
+              `
+                  VALUES ?ckb {
+                    ${sparqlEscapeUri(ckbUri)}
+                  }
+                `: ''
             }
-          `: ''
-      }
 
-        ?betrokkenBestuur <http://www.w3.org/ns/org#organization> ?eredienst.
-        ?eenheid <http://data.lblod.info/vocabularies/erediensten/betrokkenBestuur> ?betrokkenBestuur.
+            ?betrokkenBestuur <http://www.w3.org/ns/org#organization> ?eredienst.
+            ?eenheid <http://data.lblod.info/vocabularies/erediensten/betrokkenBestuur> ?betrokkenBestuur.
 
-        ?ckb <http://www.w3.org/ns/org#hasSubOrganization> ?eredienst.
+            ?ckb <http://www.w3.org/ns/org#hasSubOrganization> ?eredienst.
 
-        ?eredienst skos:prefLabel ?eredienstLabel.
-        ?ckb skos:prefLabel ?ckbLabel.
-        ?besluitType skos:prefLabel ?besluitTypeLabel.
+            ?eredienst skos:prefLabel ?eredienstLabel.
+            ?ckb skos:prefLabel ?ckbLabel.
+            ?besluitType skos:prefLabel ?besluitTypeLabel.
 
-        ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `GRAPH ?g {`: ''}
+            ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `GRAPH ?g {`: ''}
 
-          ?submission a <http://rdf.myexperiment.org/ontologies/base/Submission>;
-            mu:uuid ?submissionUuid;
-            <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#sentDate> ?dateSent;
-            dcterms:subject ?subject;
-            <http://purl.org/pav/createdBy> ?ckb;
-            prov:generated ?formData.
+              ?submission a <http://rdf.myexperiment.org/ontologies/base/Submission>;
+                <http://purl.org/pav/createdBy> ?ckb;
+                prov:generated ?formData.
 
-          ?subject a ?what.
+              ?formData
+                dcterms:type ?besluitType;
+                dcterms:relation ?childDecision.
 
-          ?formData
-            dcterms:type ?besluitType;
-            dcterms:relation ?childDecision.
+              ?childSubmission dcterms:subject ?childDecision;
+                  <http://purl.org/pav/createdBy> ?eredienst;
+                  prov:generated ?childFormData.
 
-          ?childSubmission dcterms:subject ?childDecision;
-              <http://purl.org/pav/createdBy> ?eredienst;
-              prov:generated ?childFormData.
+              ?childFormData <http://mu.semte.ch/vocabularies/ext/decisionType> ?childDecisionType.
 
-          ?childFormData <http://mu.semte.ch/vocabularies/ext/decisionType> ?childDecisionType.
+              ?childDecisionType skos:prefLabel ?childDecisionTypeLabel.
 
-          ?childDecisionType skos:prefLabel ?childDecisionTypeLabel.
+              ?childDecision a ?what.
 
-        ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `}`: ''}
+            ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `}`: ''}
+          }
+        }
+
+        ?mostRecentParentSubmission prov:generated/dcterms:relation ?childDecision;
+          <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#sentDate> ?dateSent;
+          mu:uuid ?submissionUuid.
+
+        FILTER NOT EXISTS {
+          ?otherParent prov:generated/dcterms:relation ?childDecision;
+            <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#sentDate> ?otherDateSent.
+
+          FILTER(?otherDateSent > ?dateSent)
+        }
 
         BIND(CONCAT(?ckbLabel, " namens ", ?eredienstLabel) as ?niceIngezondenDoor)
 
         BIND(IRI(CONCAT("${WORSHIP_DECISIONS_BASE_URL}", STR(?submissionUuid))) as ?seeAlsoUrl)
 
         BIND(STRBEFORE(STR(?dateSent), "T") AS ?niceDateSent)
-        BIND(CONCAT(?childDecisionTypeLabel, " van ", ?eredienstLabel, " gebundeld en verstuurd door ", ?ckbLabel,
+        BIND(CONCAT(?childDecisionTypeLabel, " van ", ?eredienstLabel, " als laatste gebundeld en verstuurd door ", ?ckbLabel,
                     " op ", ?niceDateSent) as ?displayLabel)
       }`;
   }
