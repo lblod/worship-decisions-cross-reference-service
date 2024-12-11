@@ -124,7 +124,8 @@ export function prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData
       }
       WHERE {
         {
-          SELECT DISTINCT ?childDecision ?childDecisionTypeLabel ?ckbLabel ?what ?eredienst ?eredienstLabel WHERE {
+          SELECT DISTINCT ?childDecision ?childDecisionTypeLabel ?ckbLabel ?what ?eredienst ?eredienstLabel ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `?g`: ''}
+          WHERE {
             ${fromEenheid ?
               `
                   VALUES ?eenheid {
@@ -198,16 +199,20 @@ export function prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData
           }
         }
 
-        ?mostRecentParentSubmission prov:generated/dcterms:relation ?childDecision;
-          <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#sentDate> ?dateSent;
-          mu:uuid ?submissionUuid.
+        ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `GRAPH ?g {`: ''}
 
-        FILTER NOT EXISTS {
-          ?otherParent prov:generated/dcterms:relation ?childDecision;
-            <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#sentDate> ?otherDateSent.
+          ?mostRecentParentSubmission prov:generated/dcterms:relation ?childDecision;
+            <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#sentDate> ?dateSent;
+            mu:uuid ?submissionUuid.
 
-          FILTER(?otherDateSent > ?dateSent)
-        }
+          FILTER NOT EXISTS {
+            ?otherParent prov:generated/dcterms:relation ?childDecision;
+              <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#sentDate> ?otherDateSent.
+
+            FILTER(?otherDateSent > ?dateSent)
+          }
+
+        ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `}`: ''}
 
         BIND(CONCAT(?ckbLabel, " namens ", ?eredienstLabel) as ?niceIngezondenDoor)
 
