@@ -7,7 +7,6 @@ import {
   prepareQuery,
   isCKB,
   isGemeente,
-  isDecisionTypeFromCKB,
   isCkbRelevantForDecisionType,
   ckbDecisionTypeToRelatedType,
   prepareCKBSearchQuery
@@ -87,7 +86,6 @@ app.get('/document-information', async function (req, res) {
     const eenheid = await getEenheidForDecision(forDecision);
 
     const isLoggedInAsGemeente = await isGemeente(req.fromEenheid);
-    const isSubmissionSentByCKB = isDecisionTypeFromCKB(forDecisionType);
 
     let ckbUri;
     let decisionTypeData;
@@ -99,7 +97,7 @@ app.get('/document-information', async function (req, res) {
       We exclude the case where, when logged in as a municipality, the user opens a submission that the municipality can
       view BUT that has been submitted by a different administrative units (in practice, it will always be a CKB).
     */
-    if (isLoggedInAsGemeente && !isSubmissionSentByCKB) {
+    if (isLoggedInAsGemeente) {
         if (forDecision && !forDecisionType) {
         return res.status(400).json({
           error: `Missing required query parameters. Both "forDecision" and "forDecisionType" are required.`

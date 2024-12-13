@@ -94,13 +94,6 @@ export function ckbDecisionTypeToRelatedType(decisionType) {
   return crossReferenceMappingsGemeente_CKB_EB[decisionType];
 }
 
-export function isDecisionTypeFromCKB(decisionType) {
-  // Trick: if the decision type is both in the keys AND in thevalues of `crossReferenceMappingsGemeente_CKB_EB`,
-  // then it has to be a CKB decision type.
-  return Object.values(crossReferenceMappingsGemeente_CKB_EB).some(e => e == decisionType)
-    && crossReferenceMappingsGemeente_CKB_EB[decisionType];
-}
-
 export function prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData, forDecision }) {
   let query;
 
