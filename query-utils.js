@@ -336,7 +336,6 @@ export function prepareCKBSearchQuery({ fromEenheid, forEenheid, decisionType })
     } WHERE {
       VALUES ?forEenheid {
         ${sparqlEscapeUri(forEenheid)}
-        <http://data.lblod.info/id/besturenVanDeEredienst/5a04126b0c2c7b04bf3e01f69fffa936>
       }
 
       VALUES ?fromEenheid {
