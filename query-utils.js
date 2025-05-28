@@ -36,11 +36,12 @@ export async function bestuurseenheidForSession( sessionUri ) {
   }
 }
 
-export async function getRelatedToCKB( eenheidUri ) {
+export async function getRelatedToActiveCKB( eenheidUri ) {
   const queryStr = `
     SELECT DISTINCT ?ckb WHERE {
       ?ckb <http://www.w3.org/ns/org#hasSubOrganization> ${sparqlEscapeUri(eenheidUri)};
-        a <http://data.lblod.info/vocabularies/erediensten/CentraalBestuurVanDeEredienst>.
+        a <http://data.lblod.info/vocabularies/erediensten/CentraalBestuurVanDeEredienst>;
+        <http://www.w3.org/ns/regorg#orgStatus> <http://lblod.data.gift/concepts/63cc561de9188d64ba5840a42ae8f0d6>.
     }
   `;
   const result = (await querySudo(queryStr))?.results?.bindings || [];

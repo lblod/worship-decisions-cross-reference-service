@@ -1,7 +1,7 @@
 import { app } from 'mu';
 import { querySudo } from '@lblod/mu-auth-sudo';
 import {
-  getRelatedToCKB,
+  getRelatedToActiveCKB,
   getEenheidForDecision,
   getRelatedDecisionType,
   prepareQuery,
@@ -52,7 +52,7 @@ app.get('/search-documents', async function (req, res) {
 
       if (isCkbRelevant) {
         // Figure out whether the administrative unit is related to CKB
-        ckbUri = await getRelatedToCKB(forEenheid);
+        ckbUri = await getRelatedToActiveCKB(forEenheid);
 
         if (BYPASS_HOP_CENTRAAL_BESTUUR) {
           console.warn(`Skipping extra hop centraal bestuur. This should only be used in development mode.`);
@@ -111,7 +111,7 @@ app.get('/document-information', async function (req, res) {
 
       if (isCkbRelevant) {
         // Figure out whether the administrative unit is related to a CKB or is a CKB itself
-        ckbUri = await isCKB(eenheid) ? eenheid : await getRelatedToCKB(eenheid);
+        ckbUri = await isCKB(eenheid) ? eenheid : await getRelatedToActiveCKB(eenheid);
 
         if (BYPASS_HOP_CENTRAAL_BESTUUR) {
           console.warn(`Skipping extra hop centraal bestuur. This should only be used in development mode.`);
