@@ -167,10 +167,12 @@ export function prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData
                 `: ''
             }
 
-            ?betrokkenBestuur <http://www.w3.org/ns/org#organization> ?eredienst.
-            ?eenheid <http://data.lblod.info/vocabularies/erediensten/betrokkenBestuur> ?betrokkenBestuur.
+            FILTER EXISTS {
+              ?betrokkenBestuur <http://www.w3.org/ns/org#organization> ?eredienst.
+              ?eenheid <http://data.lblod.info/vocabularies/erediensten/betrokkenBestuur> ?betrokkenBestuur.
 
-            ?ckb <http://www.w3.org/ns/org#hasSubOrganization> ?eredienst.
+              ?ckb <http://www.w3.org/ns/org#hasSubOrganization> ?eredienst.
+            }
 
             ?eredienst skos:prefLabel ?eredienstLabel.
             ?ckb skos:prefLabel ?ckbLabel.
