@@ -1,5 +1,4 @@
 import { app } from 'mu';
-import { querySudo } from '@lblod/mu-auth-sudo';
 import {
   getRelatedToActiveCKB,
   getEenheidForDecision,
@@ -10,7 +9,8 @@ import {
   isDecisionTypeFromCKB,
   isCkbRelevantForDecisionType,
   ckbDecisionTypeToRelatedType,
-  prepareCKBSearchQuery
+  prepareCKBSearchQuery,
+  queryDatabase
 } from './query-utils';
 import { fromEenheid } from './middlewares.js';
 import { invalidDecisionTypeError, sendTurtleResponse } from './utils.js';
@@ -72,7 +72,7 @@ app.get('/search-documents', async function (req, res) {
 
     // execute query
     // TODO: Here we could add a hook to connect to vendor-API if we need to.
-    const triples = (await querySudo(query))?.results?.bindings || [];
+    const triples = (await queryDatabase(query))?.results?.bindings || [];
     return sendTurtleResponse(res, triples);
   } catch (error) {
     console.log(error);
@@ -126,7 +126,7 @@ app.get('/document-information', async function (req, res) {
 
     // execute query
     // TODO: Here we could add a hook to connect to vendor-API if we need to.
-    const triples = (await querySudo(query))?.results?.bindings || [];
+    const triples = (await queryDatabase(query))?.results?.bindings || [];
     return sendTurtleResponse(res, triples);
   } catch (error) {
     return res.status(500).json({ error: error.message });

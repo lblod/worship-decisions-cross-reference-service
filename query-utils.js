@@ -1,16 +1,15 @@
-import { querySudo } from '@lblod/mu-auth-sudo';
-import { sparqlEscapeUri } from 'mu';
+import { sparqlEscapeUri, query } from 'mu';
 import {
   crossReferenceMappingsGemeente_EB,
   crossReferenceMappingsGemeente_CKB_EB
 } from './config/cross-reference-mappings';
 
 const WORSHIP_DECISIONS_BASE_URL = process.env.WORSHIP_DECISIONS_BASE_URL
-      || "https://databankerediensten.lokaalbestuur.vlaanderen.be/search/submissions/";
+  || "https://databankerediensten.lokaalbestuur.vlaanderen.be/search/submissions/";
 
-const SCOPE_SUBMISSIONS_TO_ONE_GRAPH = process.env.SCOPE_SUBMISSIONS_TO_ONE_GRAPH == 'true' ? true : false ;
+const SCOPE_SUBMISSIONS_TO_ONE_GRAPH = process.env.SCOPE_SUBMISSIONS_TO_ONE_GRAPH == 'true' ? true : false;
 
-export async function bestuurseenheidForSession( sessionUri ) {
+export async function bestuurseenheidForSession(sessionUri) {
   const queryStr = `
 
      PREFIX besluit:  <http://data.vlaanderen.be/ns/besluit#>
@@ -26,9 +25,9 @@ export async function bestuurseenheidForSession( sessionUri ) {
      LIMIT 1
   `;
 
-  let result = await querySudo(queryStr);
+  let result = await query(queryStr, { sudo: true });
 
-  if(result.results.bindings.length == 1) {
+  if (result.results.bindings.length == 1) {
     return result.results.bindings[0].bestuurseenheid.value;
   }
   else {
@@ -36,7 +35,7 @@ export async function bestuurseenheidForSession( sessionUri ) {
   }
 }
 
-export async function getRelatedToActiveCKB( eenheidUri ) {
+export async function getRelatedToActiveCKB(eenheidUri) {
   const queryStr = `
     SELECT DISTINCT ?ckb WHERE {
       ?ckb <http://www.w3.org/ns/org#hasSubOrganization> ${sparqlEscapeUri(eenheidUri)};
@@ -44,11 +43,11 @@ export async function getRelatedToActiveCKB( eenheidUri ) {
         <http://www.w3.org/ns/regorg#orgStatus> <http://lblod.data.gift/concepts/63cc561de9188d64ba5840a42ae8f0d6>.
     }
   `;
-  const result = (await querySudo(queryStr))?.results?.bindings || [];
+  const result = (await queryDatabase(queryStr))?.results?.bindings || [];
   return result[0] ? result[0].ckb.value : null;
 }
 
-export async function getEenheidForDecision( decisionUri ) {
+export async function getEenheidForDecision(decisionUri) {
   const queryStr = `
     PREFIX dcterms: <http://purl.org/dc/terms/>
 
@@ -58,11 +57,11 @@ export async function getEenheidForDecision( decisionUri ) {
     }
   `;
 
-  const result = (await querySudo(queryStr))?.results?.bindings || [];
+  const result = (await queryDatabase(queryStr))?.results?.bindings || [];
   return result[0] ? result[0].eenheid.value : null;
 }
 
-export function getRelatedDecisionType( decisionType, hasCKB ) {
+export function getRelatedDecisionType(decisionType, hasCKB) {
   // Mapping differs for some documents only if the bestuurseenheid has a CKB
   if (hasCKB) {
     return {
@@ -125,47 +124,47 @@ export function prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData
       }
       WHERE {
         {
-          SELECT DISTINCT ?childDecision ?childDecisionTypeLabel ?ckbLabel ?what ?eredienst ?eredienstLabel ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `?g`: ''}
+          SELECT DISTINCT ?childDecision ?childDecisionTypeLabel ?ckbLabel ?what ?eredienst ?eredienstLabel ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `?g` : ''}
           WHERE {
             ${fromEenheid ?
-              `
+        `
                   VALUES ?eenheid {
                     ${sparqlEscapeUri(fromEenheid)}
                   }
               `: ''
-            }
+      }
 
             ${forEenheid ?
-              `
+        `
                   VALUES ?eredienst {
                     ${sparqlEscapeUri(forEenheid)}
                   }
               `: ''
-            }
+      }
 
             ${decisionTypeData.decisionType ?
-              `
+        `
                   VALUES ?besluitType {
                     ${sparqlEscapeUri(decisionTypeData.decisionType)}
                   }
                 `: ''
-            }
+      }
 
             ${forDecision ?
-              `
+        `
                   VALUES ?childDecision {
                     ${sparqlEscapeUri(forDecision)}
                   }
                 `: ''
-            }
+      }
 
             ${ckbUri ?
-              `
+        `
                   VALUES ?ckb {
                     ${sparqlEscapeUri(ckbUri)}
                   }
                 `: ''
-            }
+      }
 
             FILTER EXISTS {
               ?betrokkenBestuur <http://www.w3.org/ns/org#organization> ?eredienst.
@@ -178,7 +177,7 @@ export function prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData
             ?ckb skos:prefLabel ?ckbLabel.
             ?besluitType skos:prefLabel ?besluitTypeLabel.
 
-            ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `GRAPH ?g {`: ''}
+            ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `GRAPH ?g {` : ''}
 
               ?submission a <http://rdf.myexperiment.org/ontologies/base/Submission>;
                 <http://purl.org/pav/createdBy> ?ckb;
@@ -198,11 +197,11 @@ export function prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData
 
               ?childDecision a ?what.
 
-            ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `}`: ''}
+            ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `}` : ''}
           }
         }
 
-        ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `GRAPH ?g {`: ''}
+        ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `GRAPH ?g {` : ''}
 
           ?mostRecentParentSubmission prov:generated/dcterms:relation ?childDecision;
             <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#sentDate> ?dateSent;
@@ -215,7 +214,7 @@ export function prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData
             FILTER(?otherDateSent > ?dateSent)
           }
 
-        ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `}`: ''}
+        ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `}` : ''}
 
         BIND(CONCAT(?ckbLabel, " namens ", ?eredienstLabel) as ?niceIngezondenDoor)
 
@@ -285,7 +284,7 @@ export function prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData
 
         ?eredienst skos:prefLabel ?eredienstLabel.
 
-        ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `GRAPH ?g {`: ''}
+        ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `GRAPH ?g {` : ''}
 
           ?submission a <http://rdf.myexperiment.org/ontologies/base/Submission>;
             mu:uuid ?submissionUuid;
@@ -302,7 +301,7 @@ export function prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData
               <http://mu.semte.ch/vocabularies/ext/sessionStartedAtTime> ?sessionStarted;
             dcterms:type ?besluitType.
 
-        ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `}`: ''}
+        ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `}` : ''}
 
         ?besluitType skos:prefLabel ?besluitTypeLabel.
 
@@ -385,7 +384,7 @@ export async function isCKB(eenheidUri) {
       ${sparqlEscapeUri(eenheidUri)} a <http://data.lblod.info/vocabularies/erediensten/CentraalBestuurVanDeEredienst> .
     }`
 
-  return (await querySudo(queryStr)).boolean;
+  return (await queryDatabase(queryStr)).boolean;
 }
 
 export async function isGemeente(eenheidUri) {
@@ -397,5 +396,10 @@ export async function isGemeente(eenheidUri) {
       ${sparqlEscapeUri(eenheidUri)} besluit:classificatie|org:classification <http://data.vlaanderen.be/id/concept/BestuurseenheidClassificatieCode/5ab0e9b8a3b2ca7c5e000001> .
     }`
 
-  return (await querySudo(queryStr)).boolean;
+  return (await queryDatabase(queryStr)).boolean;
+}
+
+
+export async function queryDatabase(queryStr) {
+  return query(queryStr, { sudo: true });
 }
