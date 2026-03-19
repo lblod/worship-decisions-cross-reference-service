@@ -2,6 +2,7 @@
   "name": "worship-decisions-cross-reference-service",
   "version": "0.4.8",
   "description": "Microservice allowing to fetch related documents to a provided Decision/DocumentType.",
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/lblod/submissions-cross-reference-service.git"
