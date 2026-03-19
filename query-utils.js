@@ -397,5 +397,5 @@ export async function isGemeente(eenheidUri) {
 
 
 export async function queryDatabase(queryStr) {
-  return query(queryStr, { sudo: true });
+  return query(queryStr, { sudo: ENV.USE_SUDO_QUERIES });
 }
