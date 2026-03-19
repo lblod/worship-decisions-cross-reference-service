@@ -11,11 +11,10 @@ import {
   ckbDecisionTypeToRelatedType,
   prepareCKBSearchQuery,
   queryDatabase
-} from './query-utils';
+} from './query-utils.js';
 import { fromEenheid } from './middlewares.js';
 import { invalidDecisionTypeError, sendTurtleResponse } from './utils.js';
-
-const BYPASS_HOP_CENTRAAL_BESTUUR = process.env.BYPASS_HOP_CENTRAAL_BESTUUR || false;
+import ENV from './env.js';
 
 app.use(fromEenheid);
 
@@ -54,7 +53,7 @@ app.get('/search-documents', async function (req, res) {
         // Figure out whether the administrative unit is related to CKB
         ckbUri = await getRelatedToActiveCKB(forEenheid);
 
-        if (BYPASS_HOP_CENTRAAL_BESTUUR) {
+        if (ENV.BYPASS_HOP_CENTRAAL_BESTUUR) {
           console.warn(`Skipping extra hop centraal bestuur. This should only be used in development mode.`);
           ckbUri = null;
         }
