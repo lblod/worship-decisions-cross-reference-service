@@ -10,12 +10,10 @@
   "author": "redpencil.io",
   "license": "MIT",
   "dependencies": {
-    "body-parser": "1.19.0"
+    "body-parser": "1.19.0",
+    "env-var": "^7.5.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "devDependencies": {
-    "env-var": "^7.5.0"
   }
 }
