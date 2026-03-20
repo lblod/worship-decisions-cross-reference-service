@@ -1,5 +1,4 @@
-import * as env from 'env-var';
-
+import env from 'env-var';
 const ENV = {
   BYPASS_HOP_CENTRAAL_BESTUUR: env.get('BYPASS_HOP_CENTRAAL_BESTUUR').default('false').asBool(),
   WORSHIP_DECISIONS_BASE_URL: env.get('WORSHIP_DECISIONS_BASE_URL').default('https://databankerediensten.lokaalbestuur.vlaanderen.be/search/submissions/').asString(),
