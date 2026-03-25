@@ -2,6 +2,7 @@
   "name": "worship-decisions-cross-reference-service",
   "version": "0.4.8",
   "description": "Microservice allowing to fetch related documents to a provided Decision/DocumentType.",
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/lblod/submissions-cross-reference-service.git"
@@ -9,8 +10,8 @@
   "author": "redpencil.io",
   "license": "MIT",
   "dependencies": {
-    "@lblod/mu-auth-sudo": "0.6.1",
-    "body-parser": "1.19.0"
+    "body-parser": "1.19.0",
+    "env-var": "^7.5.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

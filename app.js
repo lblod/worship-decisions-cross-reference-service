@@ -1,5 +1,4 @@
 import { app } from 'mu';
-import { querySudo } from '@lblod/mu-auth-sudo';
 import {
   getRelatedToActiveCKB,
   getEenheidForDecision,
@@ -10,12 +9,12 @@ import {
   isDecisionTypeFromCKB,
   isCkbRelevantForDecisionType,
   ckbDecisionTypeToRelatedType,
-  prepareCKBSearchQuery
-} from './query-utils';
+  prepareCKBSearchQuery,
+  queryDatabase
+} from './query-utils.js';
 import { fromEenheid } from './middlewares.js';
 import { invalidDecisionTypeError, sendTurtleResponse } from './utils.js';
-
-const BYPASS_HOP_CENTRAAL_BESTUUR = process.env.BYPASS_HOP_CENTRAAL_BESTUUR || false;
+import ENV from './env.js';
 
 app.use(fromEenheid);
 
@@ -54,7 +53,7 @@ app.get('/search-documents', async function (req, res) {
         // Figure out whether the administrative unit is related to CKB
         ckbUri = await getRelatedToActiveCKB(forEenheid);
 
-        if (BYPASS_HOP_CENTRAAL_BESTUUR) {
+        if (ENV.BYPASS_HOP_CENTRAAL_BESTUUR) {
           console.warn(`Skipping extra hop centraal bestuur. This should only be used in development mode.`);
           ckbUri = null;
         }
@@ -72,7 +71,7 @@ app.get('/search-documents', async function (req, res) {
 
     // execute query
     // TODO: Here we could add a hook to connect to vendor-API if we need to.
-    const triples = (await querySudo(query))?.results?.bindings || [];
+    const triples = (await queryDatabase(query))?.results?.bindings || [];
     return sendTurtleResponse(res, triples);
   } catch (error) {
     console.log(error);
@@ -126,7 +125,7 @@ app.get('/document-information', async function (req, res) {
 
     // execute query
     // TODO: Here we could add a hook to connect to vendor-API if we need to.
-    const triples = (await querySudo(query))?.results?.bindings || [];
+    const triples = (await queryDatabase(query))?.results?.bindings || [];
     return sendTurtleResponse(res, triples);
   } catch (error) {
     return res.status(500).json({ error: error.message });

@@ -68,6 +68,9 @@ GET /document-information?forDecisionType=someType&forEenheid=someEenheid
       Defaults to "https://databankerediensten.lokaalbestuur.vlaanderen.be/search/submissions/"
 - `SCOPE_SUBMISSIONS_TO_ONE_GRAPH`: Force the submissions to come from the same graph. Mainly used for applications with a lot of graphs, to avoid query timeouts.
       Defaults to "false"
+- `USE_SUDO_QUERIES`: Whether or not the service uses sudo queries when querying the database. Defaults to `true`. Note: the session information will always be queried using a sudo query, regardless of this setting.
+
+You'll also need to set `ALLOW_MU_AUTH_SUDO` to `true`, as this service uses sudo queries.
 
 ## Development Notes
 The service checks if the organizational unit is related to a Centraal Bestuur.
