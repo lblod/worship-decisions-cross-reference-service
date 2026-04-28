@@ -1,9 +1,5 @@
 import { querySudo } from '@lblod/mu-auth-sudo';
 import { sparqlEscapeUri } from 'mu';
-import {
-  crossReferenceMappingsGemeente_EB,
-  crossReferenceMappingsGemeente_CKB_EB
-} from './config/cross-reference-mappings';
 
 const WORSHIP_DECISIONS_BASE_URL = process.env.WORSHIP_DECISIONS_BASE_URL
       || "https://databankerediensten.lokaalbestuur.vlaanderen.be/search/submissions/";
@@ -62,18 +58,19 @@ export async function getEenheidForDecision( decisionUri ) {
   return result[0] ? result[0].eenheid.value : null;
 }
 
-export function getRelatedDecisionType( decisionType, hasCKB ) {
-  // Mapping differs for some documents only if the bestuurseenheid has a CKB
-  if (hasCKB) {
-    return {
-      ckbSpecificDecisionType: true,
-      decisionType: crossReferenceMappingsGemeente_CKB_EB[decisionType]
-    };
-  } else {
-    return {
-      ckbSpecificDecisionType: false,
-      decisionType: crossReferenceMappingsGemeente_EB[decisionType]
-    };
+export async function getReferredDecisionType(referrerDecisionType, withCKB) {
+  const predicate = withCKB ? 'ext:can_refer_to' : 'ext:without_relevant_CKB_can_refer_to';
+  const response = await querySudo(`
+    PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+    SELECT DISTINCT ?referredDecisionType
+    WHERE {
+      BIND (${sparqlEscapeUri(referrerDecisionType)} AS ?referrerDecisionType)
+      ?referrerDecisionType ${predicate} ?referredDecisionType .
+    }
+    LIMIT 1
+  `);
+  if (response?.results?.bindings?.length) {
+    return response.results.bindings[0].referredDecisionType.value;
   }
 }
 
@@ -91,21 +88,26 @@ export function isCkbRelevantForDecisionType(decisionType) {
     && decisionType != "https://data.vlaanderen.be/id/concept/BesluitType/b25faa84-3ab5-47ae-98c0-1b389c77b827";
 }
 
-export function ckbDecisionTypeToRelatedType(decisionType) {
-  return crossReferenceMappingsGemeente_CKB_EB[decisionType];
+export async function isDecisionTypeFromCKB(decisionType) {
+  // Trick: if the decision type both refers to another type and is being
+  // referred to from a type, then it has to be a CKB decision type.
+  const response = await querySudo(`
+    PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+    ASK {
+      GRAPH <http://mu.semte.ch/graphs/public> {
+        BIND (${sparqlEscapeUri(decisionType)} AS ?decisionType)
+        ?decisionType ext:can_refer_to ?otherType1 .
+        ?otherType2 ext:can_refer_to ?decisionType .
+      }
+    }
+  `);
+  return response.boolean;
 }
 
-export function isDecisionTypeFromCKB(decisionType) {
-  // Trick: if the decision type is both in the keys AND in thevalues of `crossReferenceMappingsGemeente_CKB_EB`,
-  // then it has to be a CKB decision type.
-  return Object.values(crossReferenceMappingsGemeente_CKB_EB).some(e => e == decisionType)
-    && crossReferenceMappingsGemeente_CKB_EB[decisionType];
-}
-
-export function prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData, forDecision }) {
+export function prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionType, forDecision }) {
   let query;
 
-  if (decisionTypeData?.ckbSpecificDecisionType) {
+  if (!!ckbUri) {
     query = `
       PREFIX dcterms: <http://purl.org/dc/terms/>
       PREFIX prov: <http://www.w3.org/ns/prov#>
@@ -143,10 +145,10 @@ export function prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData
               `: ''
             }
 
-            ${decisionTypeData.decisionType ?
+            ${decisionType ?
               `
                   VALUES ?besluitType {
-                    ${sparqlEscapeUri(decisionTypeData.decisionType)}
+                    ${sparqlEscapeUri(decisionType)}
                   }
                 `: ''
             }
@@ -264,10 +266,10 @@ export function prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData
            `: ''
       }
 
-       ${decisionTypeData?.decisionType ?
+       ${decisionType ?
         `
             VALUES ?besluitType {
-              ${sparqlEscapeUri(decisionTypeData.decisionType)}
+              ${sparqlEscapeUri(decisionType)}
             }
           `: ''
       }

@@ -1,15 +1,14 @@
 import { app } from 'mu';
 import { querySudo } from '@lblod/mu-auth-sudo';
 import {
+  getReferredDecisionType,
   getRelatedToActiveCKB,
   getEenheidForDecision,
-  getRelatedDecisionType,
   prepareQuery,
   isCKB,
   isGemeente,
   isDecisionTypeFromCKB,
   isCkbRelevantForDecisionType,
-  ckbDecisionTypeToRelatedType,
   prepareCKBSearchQuery
 } from './query-utils';
 import { fromEenheid } from './middlewares.js';
@@ -38,7 +37,7 @@ app.get('/search-documents', async function (req, res) {
     let query;
 
     if (await isCKB(fromEenheid)) {
-      const relatedDecisionType = ckbDecisionTypeToRelatedType(forDecisionType);
+      const relatedDecisionType = await getReferredDecisionType(forDecisionType, true);
 
       if (!relatedDecisionType) {
         return invalidDecisionTypeError(res, forDecisionType);
@@ -61,13 +60,13 @@ app.get('/search-documents', async function (req, res) {
       }
 
       // Get decision type to request
-      const decisionTypeData = getRelatedDecisionType(forDecisionType, ckbUri);
+      const decisionType = await getReferredDecisionType(forDecisionType, !!ckbUri);
 
-      if (!decisionTypeData.decisionType) {
+      if (!decisionType) {
         return invalidDecisionTypeError(res, forDecisionType);
       }
 
-      query = prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionTypeData });
+      query = prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionType });
     }
 
     // execute query
@@ -87,7 +86,7 @@ app.get('/document-information', async function (req, res) {
     const eenheid = await getEenheidForDecision(forDecision);
 
     const isLoggedInAsGemeente = await isGemeente(req.fromEenheid);
-    const isSubmissionSentByCKB = isDecisionTypeFromCKB(forDecisionType);
+    const isSubmissionSentByCKB = await isDecisionTypeFromCKB(forDecisionType);
 
     let ckbUri;
     let decisionTypeData;
@@ -119,10 +118,10 @@ app.get('/document-information', async function (req, res) {
         }
       }
 
-      decisionTypeData = getRelatedDecisionType(forDecisionType, ckbUri);
+      decisionType = await getReferredDecisionType(forDecisionType, !!ckbUri);
     }
 
-    const query = prepareQuery({ forDecision, ckbUri, decisionTypeData });
+    const query = prepareQuery({ forDecision, ckbUri, decisionType });
 
     // execute query
     // TODO: Here we could add a hook to connect to vendor-API if we need to.
