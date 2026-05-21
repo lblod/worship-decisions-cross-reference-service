@@ -89,7 +89,7 @@ app.get('/document-information', async function (req, res) {
     const isSubmissionSentByCKB = await isDecisionTypeFromCKB(forDecisionType);
 
     let ckbUri;
-    let decisionTypeData;
+    let decisionType;
 
     /*
       When logged in as a municipality and opening a submission sent by that municipality, we need extra info on whether
