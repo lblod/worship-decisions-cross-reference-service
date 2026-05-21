@@ -106,7 +106,6 @@ app.get('/document-information', async function (req, res) {
       }
 
       const isCkbRelevant = isCkbRelevantForDecisionType(forDecisionType);
-      let ckbUri=null;
 
       if (isCkbRelevant) {
         // Figure out whether the administrative unit is related to a CKB or is a CKB itself
