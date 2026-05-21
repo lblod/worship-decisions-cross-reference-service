@@ -94,11 +94,9 @@ export async function isDecisionTypeFromCKB(decisionType) {
   const response = await querySudo(`
     PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
     ASK {
-      GRAPH <http://mu.semte.ch/graphs/public> {
-        BIND (${sparqlEscapeUri(decisionType)} AS ?decisionType)
-        ?decisionType ext:can_refer_to ?otherType1 .
-        ?otherType2 ext:can_refer_to ?decisionType .
-      }
+      BIND (${sparqlEscapeUri(decisionType)} AS ?decisionType)
+      ?decisionType ext:can_refer_to ?otherType1 .
+      ?otherType2 ext:can_refer_to ?decisionType .
     }
   `);
   return response.boolean;

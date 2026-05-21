@@ -46,7 +46,7 @@ app.get('/search-documents', async function (req, res) {
       query = prepareCKBSearchQuery({ fromEenheid, forEenheid, decisionType: relatedDecisionType });
     } else {
       // Check if it is relevant to fetch the CKB related to the submission based on decision type
-      const isCkbRelevant = isCkbRelevantForDecisionType(forDecisionType);
+      const isCkbRelevant = await isCkbRelevantForDecisionType(forDecisionType);
       let ckbUri=null;
 
       if (isCkbRelevant) {
@@ -105,7 +105,7 @@ app.get('/document-information', async function (req, res) {
         });
       }
 
-      const isCkbRelevant = isCkbRelevantForDecisionType(forDecisionType);
+      const isCkbRelevant = await isCkbRelevantForDecisionType(forDecisionType);
 
       if (isCkbRelevant) {
         // Figure out whether the administrative unit is related to a CKB or is a CKB itself
