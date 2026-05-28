@@ -74,18 +74,18 @@ export async function getReferredDecisionType(referrerDecisionType, withCKB) {
   }
 }
 
-/*
-  If the decision if of one of the two following types, it doesn't matter if there is a CKB in between the Gemeente
-  and the EB even when the creator of the submission is a CKB.
-  Those types allow cross references directly between Gemeente -> CKB and Gemeente -> EB.
-
-  Types:
-  - Schorsing beslissing eredienstbesturen
-  - Opvragen bijkomende inlichtingen eredienstbesturen (met als gevolg stuiting termijn)
-*/
-export function isCkbRelevantForDecisionType(decisionType) {
-  return decisionType != "https://data.vlaanderen.be/id/concept/BesluitDocumentType/24743b26-e0fb-4c14-8c82-5cd271289b0e"
-    && decisionType != "https://data.vlaanderen.be/id/concept/BesluitType/b25faa84-3ab5-47ae-98c0-1b389c77b827";
+// A decision type is CKB-relevant if it has a with-CKB mapping in the
+// triplestore. Types without an `ext:can_refer_to` predicate (e.g. Schorsing,
+// Opvragen bijkomende inlichtingen) refer directly between Gemeente and EB
+// regardless of whether a CKB sits in between.
+export async function isCkbRelevantForDecisionType(decisionType) {
+  const response = await querySudo(`
+    PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+    ASK {
+      ${sparqlEscapeUri(decisionType)} ext:can_refer_to ?referredDecisionType .
+    }
+  `);
+  return response.boolean;
 }
 
 export async function isDecisionTypeFromCKB(decisionType) {
@@ -94,11 +94,9 @@ export async function isDecisionTypeFromCKB(decisionType) {
   const response = await querySudo(`
     PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
     ASK {
-      GRAPH <http://mu.semte.ch/graphs/public> {
-        BIND (${sparqlEscapeUri(decisionType)} AS ?decisionType)
-        ?decisionType ext:can_refer_to ?otherType1 .
-        ?otherType2 ext:can_refer_to ?decisionType .
-      }
+      BIND (${sparqlEscapeUri(decisionType)} AS ?decisionType)
+      ?decisionType ext:can_refer_to ?otherType1 .
+      ?otherType2 ext:can_refer_to ?decisionType .
     }
   `);
   return response.boolean;
