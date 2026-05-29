@@ -59,46 +59,86 @@ export async function getEenheidForDecision( decisionUri ) {
 }
 
 export async function getReferredDecisionType(referrerDecisionType, withCKB) {
-  const predicate = withCKB ? 'ext:can_refer_to' : 'ext:without_relevant_CKB_can_refer_to';
-  const response = await querySudo(`
-    PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
-    SELECT DISTINCT ?referredDecisionType
-    WHERE {
-      BIND (${sparqlEscapeUri(referrerDecisionType)} AS ?referrerDecisionType)
-      ?referrerDecisionType ${predicate} ?referredDecisionType .
-    }
-    LIMIT 1
-  `);
+  let response;
+  if (withCKB) {
+    response = await querySudo(`
+      PREFIX lblodBesluit: <http://lblod.data.gift/vocabularies/besluit/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX ref: <http://lblod.data.gift/vocabularies/referencing/>
+      PREFIX BestuurseenheidClassificatieCode: <http://data.vlaanderen.be/id/concept/BestuurseenheidClassificatieCode/>
+
+      SELECT DISTINCT ?referredDecisionType
+      WHERE {
+        ?rule
+          rdf:type ref:ReferencingRule ;
+          rdfs:domain ${sparqlEscapeUri(referrerDecisionType)} ;
+          rdfs:range ?referredDecisionType .
+          FILTER NOT EXISTS {
+            ?rule
+              besluit:decidableBy BestuurseenheidClassificatieCode:5ab0e9b8a3b2ca7c5e000001 ;
+              besluit:referredDecidableBy BestuurseenheidClassificatieCode:f9cac08a-13c1-49da-9bcb-f650b0604054 .
+          }
+      }
+      LIMIT 1
+    `);
+  } else {
+    response = await querySudo(`
+      PREFIX lblodBesluit: <http://lblod.data.gift/vocabularies/besluit/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+      PREFIX ref: <http://lblod.data.gift/vocabularies/referencing/>
+      PREFIX BestuurseenheidClassificatieCode: <http://data.vlaanderen.be/id/concept/BestuurseenheidClassificatieCode/>
+
+      SELECT DISTINCT ?referredDecisionType
+      WHERE {
+        ?rule
+          rdf:type ref:ReferencingRule ;
+          rdfs:domain ${sparqlEscapeUri(referrerDecisionType)} ;
+          rdfs:range ?referredDecisionType ;
+          besluit:decidableBy BestuurseenheidClassificatieCode:5ab0e9b8a3b2ca7c5e000001 ;
+          besluit:referredDecidableBy BestuurseenheidClassificatieCode:f9cac08a-13c1-49da-9bcb-f650b0604054 .
+      }
+      LIMIT 1
+    `);
+  }
+
   if (response?.results?.bindings?.length) {
     return response.results.bindings[0].referredDecisionType.value;
   }
 }
 
-// A decision type is CKB-relevant if it has a with-CKB mapping in the
-// triplestore. Types without an `ext:can_refer_to` predicate (e.g. Schorsing,
-// Opvragen bijkomende inlichtingen) refer directly between Gemeente and EB
-// regardless of whether a CKB sits in between.
 export async function isCkbRelevantForDecisionType(decisionType) {
   const response = await querySudo(`
-    PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+    PREFIX lblodBesluit: <http://lblod.data.gift/vocabularies/besluit/>
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    PREFIX ref: <http://lblod.data.gift/vocabularies/referencing/>
+    PREFIX BestuurseenheidClassificatieCode: <http://data.vlaanderen.be/id/concept/BestuurseenheidClassificatieCode/>
+
     ASK {
-      ${sparqlEscapeUri(decisionType)} ext:can_refer_to ?referredDecisionType .
-    }
-  `);
+      ?rule
+        rdf:type ref:ReferencingRule ;
+        rdfs:domain ${sparqlEscapeUri(decisionType)} ;
+        lblodBesluit:referredDecidableBy BestuurseenheidClassificatieCode:f9cac08a-13c1-49da-9bcb-f650b0604054 .
+    }`);
   return response.boolean;
 }
 
 export async function isDecisionTypeFromCKB(decisionType) {
-  // Trick: if the decision type both refers to another type and is being
-  // referred to from a type, then it has to be a CKB decision type.
   const response = await querySudo(`
-    PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
+    PREFIX lblodBesluit: <http://lblod.data.gift/vocabularies/besluit/>
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    PREFIX ref: <http://lblod.data.gift/vocabularies/referencing/>
+    PREFIX BestuurseenheidClassificatieCode: <http://data.vlaanderen.be/id/concept/BestuurseenheidClassificatieCode/>
+
     ASK {
-      BIND (${sparqlEscapeUri(decisionType)} AS ?decisionType)
-      ?decisionType ext:can_refer_to ?otherType1 .
-      ?otherType2 ext:can_refer_to ?decisionType .
-    }
-  `);
+      ?rule
+        rdf:type ref:ReferencingRule ;
+        rdfs:domain ${sparqlEscapeUri(decisionType)} ;
+        lblodBesluit:decidableBy BestuurseenheidClassificatieCode:f9cac08a-13c1-49da-9bcb-f650b0604054 .
+    }`);
   return response.boolean;
 }
 
