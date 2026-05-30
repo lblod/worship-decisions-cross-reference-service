@@ -2,13 +2,13 @@ import { bestuurseenheidForSession } from './query-utils.js';
 import { getSessionUri } from './utils.js';
 
 /**
- * Looks up the bestuurseenheid attached to the current session and stores in as `fromEenheid` on the request object.
+ * Looks up the bestuurseenheid attached to the current session and stores in as `referrerOrganisation` on the request object.
  * If the session uri isn't found a 400 response is returned.
  * @param {*} req 
  * @param {*} res 
  * @param {*} next 
  */
-export async function fromEenheid(req, res, next) {
+export async function referrerOrganisation(req, res, next) {
   const sessionUri = getSessionUri(req);
 
   if (!sessionUri) {
@@ -17,14 +17,14 @@ export async function fromEenheid(req, res, next) {
     });
   }
 
-  const fromEenheid = await bestuurseenheidForSession(sessionUri);
+  const referrerOrganisation = await bestuurseenheidForSession(sessionUri);
 
-  if (!fromEenheid) {
+  if (!referrerOrganisation) {
     return res.status(400).json({
       error: "No eenheid found for mu-session-id. Aborting"
     });
   }
 
-  req.fromEenheid = fromEenheid;
+  req.referrerOrganisation = referrerOrganisation;
   next();
 }

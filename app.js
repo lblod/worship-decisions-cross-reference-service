@@ -4,6 +4,7 @@ import {
   getReferredDecisionType,
   getRelatedToActiveCKB,
   getEenheidForDecision,
+  getOrganisationType,
   prepareQuery,
   isCKB,
   isGemeente,
@@ -11,12 +12,12 @@ import {
   isCkbRelevantForDecisionType,
   prepareCKBSearchQuery
 } from './query-utils';
-import { fromEenheid } from './middlewares.js';
+import { referrerOrganisation } from './middlewares.js';
 import { invalidDecisionTypeError, sendTurtleResponse } from './utils.js';
 
 const BYPASS_HOP_CENTRAAL_BESTUUR = process.env.BYPASS_HOP_CENTRAAL_BESTUUR || false;
 
-app.use(fromEenheid);
+app.use(referrerOrganisation);
 
 app.get('/hello', function (req, res) {
   res.send('Hello from worship-decisions-cross-reference-service');
@@ -24,49 +25,52 @@ app.get('/hello', function (req, res) {
 
 app.get('/search-documents', async function (req, res) {
   try {
-    const forDecisionType = req.query.forDecisionType;
-    const forEenheid = req.query.forEenheid;
+    const referrerDecisionType = req.query.forDecisionType;
+    const referredOrganisation = req.query.forEenheid;
 
-    if (!forDecisionType || !forEenheid) {
+    if (!referrerDecisionType || !referredOrganisation) {
       return res.status(400).json({
         error: "Missing required query parameters. Please provide 'forDecisionType' and 'forEenheid'."
       });
     }
 
-    const fromEenheid = req.fromEenheid;
+    const referrerOrganisation = req.referrerOrganisation;
+    const referrerOrgType = await getOrganisationType(referrerOrganisation);
+    const referredOrgType = await getOrganisationType(referredOrganisation);
+
     let query;
 
-    if (await isCKB(fromEenheid)) {
-      const relatedDecisionType = await getReferredDecisionType(forDecisionType, true);
+    if (await isCKB(referrerOrganisation)) {
+      const relatedDecisionType = await getReferredDecisionType(referrerDecisionType, referrerOrgType, referredOrgType);
 
       if (!relatedDecisionType) {
-        return invalidDecisionTypeError(res, forDecisionType);
+        return invalidDecisionTypeError(res, referrerDecisionType);
       }
 
-      query = prepareCKBSearchQuery({ fromEenheid, forEenheid, decisionType: relatedDecisionType });
+      query = prepareCKBSearchQuery(referrerOrganisation, referredOrganisation, relatedDecisionType);
     } else {
       // Check if it is relevant to fetch the CKB related to the submission based on decision type
-      const isCkbRelevant = await isCkbRelevantForDecisionType(forDecisionType);
-      let ckbUri=null;
+      const isCkbRelevant = await isCkbRelevantForDecisionType(referrerDecisionType);
+      let ckbUri, decisionType;
 
       if (isCkbRelevant) {
-        // Figure out whether the administrative unit is related to CKB
-        ckbUri = await getRelatedToActiveCKB(forEenheid);
-
+        // Figure out to what CKB the administrative unit is related to
+        ckbUri = await getRelatedToActiveCKB(referredOrganisation);
         if (BYPASS_HOP_CENTRAAL_BESTUUR) {
           console.warn(`Skipping extra hop centraal bestuur. This should only be used in development mode.`);
-          ckbUri = null;
+          ckbUri = undefined;
         }
+        const ckbType = await getOrganisationType(ckbUri);
+        decisionType = await getReferredDecisionType(referrerDecisionType, referrerOrgType, ckbType);
+      } else {
+        decisionType = await getReferredDecisionType(referrerDecisionType, referrerOrgType, referredOrgType);
       }
-
-      // Get decision type to request
-      const decisionType = await getReferredDecisionType(forDecisionType, !!ckbUri);
 
       if (!decisionType) {
-        return invalidDecisionTypeError(res, forDecisionType);
+        return invalidDecisionTypeError(res, referrerDecisionType);
       }
 
-      query = prepareQuery({ fromEenheid, forEenheid, ckbUri, decisionType });
+      query = prepareQuery(referrerOrganisation, referredOrganisation, ckbUri, decisionType);
     }
 
     // execute query
@@ -81,12 +85,12 @@ app.get('/search-documents', async function (req, res) {
 
 app.get('/document-information', async function (req, res) {
   try {
-    const forDecisionType = req.query.forDecisionType;
+    const referrerDecisionType = req.query.forDecisionType;
     const forDecision = req.query.forRelatedDecision;
     const eenheid = await getEenheidForDecision(forDecision);
 
-    const isLoggedInAsGemeente = await isGemeente(req.fromEenheid);
-    const isSubmissionSentByCKB = await isDecisionTypeFromCKB(forDecisionType);
+    const isLoggedInAsGemeente = await isGemeente(req.referrerOrganisation);
+    const isSubmissionSentByCKB = await isDecisionTypeFromCKB(referrerDecisionType);
 
     let ckbUri;
     let decisionType;
@@ -99,13 +103,13 @@ app.get('/document-information', async function (req, res) {
       view BUT that has been submitted by a different administrative units (in practice, it will always be a CKB).
     */
     if (isLoggedInAsGemeente && !isSubmissionSentByCKB) {
-        if (forDecision && !forDecisionType) {
+        if (forDecision && !referrerDecisionType) {
         return res.status(400).json({
           error: `Missing required query parameters. Both "forDecision" and "forDecisionType" are required.`
         });
       }
 
-      const isCkbRelevant = await isCkbRelevantForDecisionType(forDecisionType);
+      const isCkbRelevant = await isCkbRelevantForDecisionType(referrerDecisionType);
 
       if (isCkbRelevant) {
         // Figure out whether the administrative unit is related to a CKB or is a CKB itself
@@ -117,10 +121,10 @@ app.get('/document-information', async function (req, res) {
         }
       }
 
-      decisionType = await getReferredDecisionType(forDecisionType, !!ckbUri);
+      decisionType = await getReferredDecisionType(referrerDecisionType, !!ckbUri);
     }
 
-    const query = prepareQuery({ forDecision, ckbUri, decisionType });
+    const query = prepareQuery(undefined, forDecision, ckbUri, decisionType);
 
     // execute query
     // TODO: Here we could add a hook to connect to vendor-API if we need to.

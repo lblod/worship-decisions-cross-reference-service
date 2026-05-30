@@ -32,6 +32,25 @@ export async function bestuurseenheidForSession( sessionUri ) {
   }
 }
 
+export async function getOrganisationType(organisation) {
+  const response = await querySudo(`
+    PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    PREFIX organisatie: <http://lblod.data.gift/vocabularies/organisatie/>
+
+    SELECT DISTINCT ?code
+    WHERE {
+      ${sparqlEscapeUri(organisation)} besluit:classificatie ?code .
+      ?code rdf:type organisatie:BestuurseenheidClassificatieCode .
+    }
+    LIMIT 1
+  `);
+
+  if (response?.results?.bindings?.length) {
+    return response.results.bindings[0].code.value;
+  }
+}
+
 export async function getRelatedToActiveCKB( eenheidUri ) {
   const queryStr = `
     SELECT DISTINCT ?ckb WHERE {
