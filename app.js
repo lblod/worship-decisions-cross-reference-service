@@ -60,6 +60,9 @@ app.get('/search-documents', async function (req, res) {
           console.warn(`Skipping extra hop centraal bestuur. This should only be used in development mode.`);
           ckbUri = undefined;
         }
+      }
+
+      if (ckbUri) {
         const ckbType = await getOrganisationType(ckbUri);
         decisionType = await getReferredDecisionType(referrerDecisionType, referrerOrgType, ckbType);
       } else {
