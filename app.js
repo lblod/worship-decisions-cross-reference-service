@@ -126,7 +126,8 @@ app.get('/document-information', async function (req, res) {
           ckbUri = null;
         }
 
-        referredOrgType = await getOrganisationType(ckbUri);
+        if (ckbUri)
+          referredOrgType = await getOrganisationType(ckbUri);
       }
 
       decisionType = await getReferredDecisionType(referrerDecisionType, referrerOrgType, referredOrgType);
