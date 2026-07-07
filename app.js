@@ -90,6 +90,7 @@ app.get('/document-information', async function (req, res) {
   try {
     const referrerDecisionType = req.query.forDecisionType;
     const forDecision = req.query.forRelatedDecision;
+    const referredOrganisation = await getEenheidForDecision(forDecision);
     const eenheid = await getEenheidForDecision(forDecision);
 
     const isLoggedInAsGemeente = await isGemeente(req.referrerOrganisation);
@@ -127,7 +128,7 @@ app.get('/document-information', async function (req, res) {
       decisionType = await getReferredDecisionType(referrerDecisionType, !!ckbUri);
     }
 
-    const query = prepareQuery(undefined, forDecision, ckbUri, decisionType);
+    const query = prepareQuery(undefined, referredOrganisation, ckbUri, decisionType, forDecision);
 
     // execute query
     // TODO: Here we could add a hook to connect to vendor-API if we need to.
