@@ -90,10 +90,13 @@ app.get('/document-information', async function (req, res) {
   try {
     const referrerDecisionType = req.query.forDecisionType;
     const forDecision = req.query.forRelatedDecision;
-    const eenheid = await getEenheidForDecision(forDecision);
+    const referredOrganisation = await getEenheidForDecision(forDecision);
 
     const isLoggedInAsGemeente = await isGemeente(req.referrerOrganisation);
     const isSubmissionSentByCKB = await isDecisionTypeFromCKB(referrerDecisionType);
+
+    const referrerOrgType = await getOrganisationType(req.referrerOrganisation);
+    let referredOrgType = await getOrganisationType(referredOrganisation);
 
     let ckbUri;
     let decisionType;
@@ -116,18 +119,21 @@ app.get('/document-information', async function (req, res) {
 
       if (isCkbRelevant) {
         // Figure out whether the administrative unit is related to a CKB or is a CKB itself
-        ckbUri = await isCKB(eenheid) ? eenheid : await getRelatedToActiveCKB(eenheid);
+        ckbUri = await getRelatedToActiveCKB(referredOrganisation);
 
         if (BYPASS_HOP_CENTRAAL_BESTUUR) {
           console.warn(`Skipping extra hop centraal bestuur. This should only be used in development mode.`);
           ckbUri = null;
         }
+
+        if (ckbUri)
+          referredOrgType = await getOrganisationType(ckbUri);
       }
 
-      decisionType = await getReferredDecisionType(referrerDecisionType, !!ckbUri);
+      decisionType = await getReferredDecisionType(referrerDecisionType, referrerOrgType, referredOrgType);
     }
 
-    const query = prepareQuery(undefined, forDecision, ckbUri, decisionType);
+    const query = prepareQuery(undefined, referredOrganisation, ckbUri, decisionType, forDecision);
 
     // execute query
     // TODO: Here we could add a hook to connect to vendor-API if we need to.

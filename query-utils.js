@@ -59,9 +59,9 @@ export async function getRelatedToActiveCKB( eenheidUri ) {
         a <http://data.lblod.info/vocabularies/erediensten/CentraalBestuurVanDeEredienst> ;
         <http://www.w3.org/ns/regorg#orgStatus> <http://lblod.data.gift/concepts/63cc561de9188d64ba5840a42ae8f0d6> .
     }
-  `;
+    LIMIT 1`;
   const result = (await querySudo(queryStr))?.results?.bindings || [];
-  return result[0] ? result[0].ckb.value : null;
+  return result[0]?.ckb?.value;
 }
 
 export async function getEenheidForDecision( decisionUri ) {
@@ -73,10 +73,11 @@ export async function getEenheidForDecision( decisionUri ) {
       ?submission
         dcterms:subject ${sparqlEscapeUri(decisionUri)} ;
         pav:createdBy ?eenheid .
-    }`;
+    }
+    LIMIT 1`;
 
   const result = (await querySudo(queryStr))?.results?.bindings || [];
-  return result[0] ? result[0].eenheid.value : null;
+  return result[0]?.eenheid?.value;
 }
 
 export async function getReferredDecisionType(referrerDecisionType, referrerOrgType, referredOrgType) {
