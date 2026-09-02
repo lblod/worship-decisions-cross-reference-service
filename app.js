@@ -1,5 +1,4 @@
-import { app } from 'mu';
-import { querySudo } from '@lblod/mu-auth-sudo';
+import { app, query as muQuery } from 'mu';
 import {
   getReferredDecisionType,
   getRelatedToActiveCKB,
@@ -10,7 +9,8 @@ import {
   isGemeente,
   isDecisionTypeFromCKB,
   isCkbRelevantForDecisionType,
-  prepareCKBSearchQuery
+  prepareCKBSearchQuery,
+  USE_SUDO_QUERIES
 } from './query-utils';
 import { referrerOrganisation } from './middlewares.js';
 import { invalidDecisionTypeError, sendTurtleResponse } from './utils.js';
@@ -78,7 +78,7 @@ app.get('/search-documents', async function (req, res) {
 
     // execute query
     // TODO: Here we could add a hook to connect to vendor-API if we need to.
-    const triples = (await querySudo(query))?.results?.bindings || [];
+    const triples = (await muQuery(query, { sudo: USE_SUDO_QUERIES }))?.results?.bindings || [];
     return sendTurtleResponse(res, triples);
   } catch (error) {
     console.log(error);
@@ -137,9 +137,10 @@ app.get('/document-information', async function (req, res) {
 
     // execute query
     // TODO: Here we could add a hook to connect to vendor-API if we need to.
-    const triples = (await querySudo(query))?.results?.bindings || [];
+    const triples = (await muQuery(query, {sudo: USE_SUDO_QUERIES}))?.results?.bindings || [];
     return sendTurtleResponse(res, triples);
   } catch (error) {
+    console.log(error);
     return res.status(500).json({ error: error.message });
   }
 });
