@@ -1,10 +1,11 @@
-import { querySudo } from '@lblod/mu-auth-sudo';
-import { sparqlEscapeUri } from 'mu';
+import { sparqlEscapeUri, query as muQuery } from 'mu';
 
 const WORSHIP_DECISIONS_BASE_URL = process.env.WORSHIP_DECISIONS_BASE_URL
       || "https://databankerediensten.lokaalbestuur.vlaanderen.be/search/submissions/";
 
 const SCOPE_SUBMISSIONS_TO_ONE_GRAPH = process.env.SCOPE_SUBMISSIONS_TO_ONE_GRAPH == 'true' ? true : false ;
+
+export const USE_SUDO_QUERIES = (process.env.USE_SUDO_QUERIES || 'true') === 'true';
 
 export async function bestuurseenheidForSession( sessionUri ) {
   const queryStr = `
@@ -22,7 +23,7 @@ export async function bestuurseenheidForSession( sessionUri ) {
      LIMIT 1
   `;
 
-  let result = await querySudo(queryStr);
+  let result = await muQuery(queryStr, {sudo: true});
 
   if(result.results.bindings.length == 1) {
     return result.results.bindings[0].bestuurseenheid.value;
@@ -33,7 +34,7 @@ export async function bestuurseenheidForSession( sessionUri ) {
 }
 
 export async function getOrganisationType(organisation) {
-  const response = await querySudo(`
+  const response = await muQuery(`
     PREFIX besluit: <http://data.vlaanderen.be/ns/besluit#>
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
     PREFIX organisatie: <http://lblod.data.gift/vocabularies/organisatie/>
@@ -44,7 +45,7 @@ export async function getOrganisationType(organisation) {
       ?code rdf:type organisatie:BestuurseenheidClassificatieCode .
     }
     LIMIT 1
-  `);
+  `, {sudo: USE_SUDO_QUERIES});
 
   if (response?.results?.bindings?.length) {
     return response.results.bindings[0].code.value;
@@ -60,7 +61,7 @@ export async function getRelatedToActiveCKB( eenheidUri ) {
         <http://www.w3.org/ns/regorg#orgStatus> <http://lblod.data.gift/concepts/63cc561de9188d64ba5840a42ae8f0d6> .
     }
     LIMIT 1`;
-  const result = (await querySudo(queryStr))?.results?.bindings || [];
+  const result = (await muQuery(queryStr, {sudo: USE_SUDO_QUERIES}))?.results?.bindings || [];
   return result[0]?.ckb?.value;
 }
 
@@ -75,13 +76,12 @@ export async function getEenheidForDecision( decisionUri ) {
         pav:createdBy ?eenheid .
     }
     LIMIT 1`;
-
-  const result = (await querySudo(queryStr))?.results?.bindings || [];
+  const result = (await muQuery(queryStr, {sudo: USE_SUDO_QUERIES}))?.results?.bindings || [];
   return result[0]?.eenheid?.value;
 }
 
 export async function getReferredDecisionType(referrerDecisionType, referrerOrgType, referredOrgType) {
-  const response = await querySudo(`
+  const response = await muQuery(`
     PREFIX lblodBesluit: <http://lblod.data.gift/vocabularies/besluit/>
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -98,14 +98,14 @@ export async function getReferredDecisionType(referrerDecisionType, referrerOrgT
         lblodBesluit:referredDecidableBy ${sparqlEscapeUri(referredOrgType)} .
     }
     LIMIT 1
-  `);
+  `, {sudo: USE_SUDO_QUERIES});
   if (response?.results?.bindings?.length) {
     return response.results.bindings[0].referredDecisionType.value;
   }
 }
 
 export async function isCkbRelevantForDecisionType(decisionType) {
-  const response = await querySudo(`
+  const response = await muQuery(`
     PREFIX lblodBesluit: <http://lblod.data.gift/vocabularies/besluit/>
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -117,12 +117,12 @@ export async function isCkbRelevantForDecisionType(decisionType) {
         rdf:type ref:ReferencingRule ;
         rdfs:domain ${sparqlEscapeUri(decisionType)} ;
         lblodBesluit:referredDecidableBy BestuurseenheidClassificatieCode:f9cac08a-13c1-49da-9bcb-f650b0604054 .
-    }`);
+    }`, {sudo: USE_SUDO_QUERIES});
   return response.boolean;
 }
 
 export async function isDecisionTypeFromCKB(decisionType) {
-  const response = await querySudo(`
+  const response = await muQuery(`
     PREFIX lblodBesluit: <http://lblod.data.gift/vocabularies/besluit/>
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -134,7 +134,7 @@ export async function isDecisionTypeFromCKB(decisionType) {
         rdf:type ref:ReferencingRule ;
         rdfs:domain ${sparqlEscapeUri(decisionType)} ;
         lblodBesluit:decidableBy BestuurseenheidClassificatieCode:f9cac08a-13c1-49da-9bcb-f650b0604054 .
-    }`);
+    }`, {sudo: USE_SUDO_QUERIES});
   return response.boolean;
 }
 
@@ -357,7 +357,7 @@ export async function isCKB(eenheidUri) {
       ${sparqlEscapeUri(eenheidUri)} a <http://data.lblod.info/vocabularies/erediensten/CentraalBestuurVanDeEredienst> .
     }`
 
-  return (await querySudo(queryStr)).boolean;
+  return (await muQuery(queryStr, {sudo: USE_SUDO_QUERIES})).boolean;
 }
 
 export async function isGemeente(eenheidUri) {
@@ -369,5 +369,5 @@ export async function isGemeente(eenheidUri) {
       ${sparqlEscapeUri(eenheidUri)} besluit:classificatie|org:classification <http://data.vlaanderen.be/id/concept/BestuurseenheidClassificatieCode/5ab0e9b8a3b2ca7c5e000001> .
     }`
 
-  return (await querySudo(queryStr)).boolean;
+  return (await muQuery(queryStr, {sudo: USE_SUDO_QUERIES})).boolean;
 }
