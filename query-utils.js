@@ -325,24 +325,26 @@ export function prepareCKBSearchQuery(fromEenheid, forEenheid, decisionType) {
       VALUES ?besluitType { ${sparqlEscapeUri(decisionType)} }
 
       ?fromEenheid org:hasSubOrganization ?forEenheid .
-
-      ?submission
-        a meb:Submission ;
-        mu:uuid ?submissionUuid ;
-        nmo:sentDate ?dateSent ;
-        dcterms:subject ?subject ;
-        pav:createdBy ?forEenheid ;
-        prov:generated ?formData .
-
       ?forEenheid skos:prefLabel ?eredienstLabel .
-
-      ?subject a ?what .
-
-      ?formData
-        formdata:sessionStartedAtTime | ext:sessionStartedAtTime ?sessionStarted ;
-        dcterms:type ?besluitType .
-
       ?besluitType skos:prefLabel ?besluitTypeLabel .
+
+      ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `GRAPH ?g {`: ''}
+
+        ?submission
+          a meb:Submission ;
+          mu:uuid ?submissionUuid ;
+          nmo:sentDate ?dateSent ;
+          dcterms:subject ?subject ;
+          pav:createdBy ?forEenheid ;
+          prov:generated ?formData .
+
+        ?subject a ?what .
+
+        ?formData
+          formdata:sessionStartedAtTime | ext:sessionStartedAtTime ?sessionStarted ;
+          dcterms:type ?besluitType .
+
+       ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `}`: ''}
 
       BIND(IRI(CONCAT("${WORSHIP_DECISIONS_BASE_URL}", STR(?submissionUuid))) as ?seeAlsoUrl)
       BIND(STRBEFORE(STR(?dateSent), "T") AS ?niceDateSent)
