@@ -184,6 +184,7 @@ export function prepareQuery(fromEenheid, forEenheid, ckbUri, decisionType, forD
             ?eredienst skos:prefLabel ?eredienstLabel.
             ?ckb skos:prefLabel ?ckbLabel.
             ?besluitType skos:prefLabel ?besluitTypeLabel.
+            ?childDecisionType skos:prefLabel ?childDecisionTypeLabel .
 
             ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `GRAPH ?g {`: ''}
 
@@ -202,8 +203,6 @@ export function prepareQuery(fromEenheid, forEenheid, ckbUri, decisionType, forD
                 prov:generated ?childFormData .
 
               ?childFormData ext:decisionType ?childDecisionType .
-
-              ?childDecisionType skos:prefLabel ?childDecisionTypeLabel .
 
               ?childDecision a ?what .
 
