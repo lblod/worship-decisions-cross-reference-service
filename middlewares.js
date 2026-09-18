@@ -17,7 +17,13 @@ export async function referrerOrganisation(req, res, next) {
     });
   }
 
-  const referrerOrganisation = await bestuurseenheidForSession(sessionUri);
+  let referrerOrganisation;
+  try {
+    referrerOrganisation = await bestuurseenheidForSession(sessionUri);
+  } catch (error) {
+    console.log(error);
+    return next(error);
+  }
 
   if (!referrerOrganisation) {
     return res.status(400).json({
