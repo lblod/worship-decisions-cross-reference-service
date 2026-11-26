@@ -54,8 +54,9 @@ app.get('/search-documents', async function (req, res) {
       let ckbUri, decisionType;
 
       if (isCkbRelevant) {
-        // Figure out to what CKB the administrative unit is related to
+        // Figure out to what CKB the administrative unit (= the EB) is related to
         ckbUri = await getRelatedToActiveCKB(referredOrganisation);
+        // TODO: what if CKB is not correctly set up for this EB (has happened). Provide error message.
         if (BYPASS_HOP_CENTRAAL_BESTUUR) {
           console.warn(`Skipping extra hop centraal bestuur. This should only be used in development mode.`);
           ckbUri = undefined;
