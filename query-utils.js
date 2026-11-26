@@ -156,9 +156,11 @@ export function prepareQuery(fromEenheid, forEenheid, ckbUri, decisionType, forD
       PREFIX formdata: <http://lblod.data.gift/vocabularies/besluit/submission/form-data/>
       PREFIX ext: <http://mu.semte.ch/vocabularies/ext/>
       PREFIX ere: <http://data.lblod.info/vocabularies/erediensten/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 
       CONSTRUCT {
-        ?childDecision a ?what ;
+        ?childDecision
+          rdf:type ?what ;
           skos:prefLabel ?displayLabel ;
           pav:createdBy ?eredienst ;
           nmo:sentDate ?dateSent ;
@@ -166,63 +168,39 @@ export function prepareQuery(fromEenheid, forEenheid, ckbUri, decisionType, forD
         ?eredienst skos:prefLabel ?niceIngezondenDoor .
       }
       WHERE {
-        {
-          SELECT DISTINCT ?childDecision ?childDecisionTypeLabel ?ckbLabel ?what ?eredienst ?eredienstLabel ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `?g`: ''}
-          WHERE {
-            ${fromEenheid ? `VALUES ?eenheid { ${sparqlEscapeUri(fromEenheid)} }` : ''}
-            ${forEenheid ? `VALUES ?eredienst { ${sparqlEscapeUri(forEenheid)} }` : ''}
-            ${decisionType ? `VALUES ?besluitType { ${sparqlEscapeUri(decisionType)} }` : ''}
-            ${forDecision ? `VALUES ?childDecision { ${sparqlEscapeUri(forDecision)} }` : ''}
-            ${ckbUri ? `VALUES ?ckb { ${sparqlEscapeUri(ckbUri)} }` : ''}
+        ${fromEenheid ? `VALUES ?eenheid { ${sparqlEscapeUri(fromEenheid)} }` : ''}
+        ${forEenheid ? `VALUES ?eredienst { ${sparqlEscapeUri(forEenheid)} }` : ''}
+        ${decisionType ? `VALUES ?besluitType { ${sparqlEscapeUri(decisionType)} }` : ''}
+        ${forDecision ? `VALUES ?childDecision { ${sparqlEscapeUri(forDecision)} }` : ''}
+        ${ckbUri ? `VALUES ?ckb { ${sparqlEscapeUri(ckbUri)} }` : ''}
 
-            FILTER EXISTS {
-              ?betrokkenBestuur org:organization ?eredienst .
-              ?eenheid ere:betrokkenBestuur ?betrokkenBestuur .
-              ?ckb org:hasSubOrganization ?eredienst.
-            }
-
-            ?eredienst skos:prefLabel ?eredienstLabel.
-            ?ckb skos:prefLabel ?ckbLabel.
-            ?besluitType skos:prefLabel ?besluitTypeLabel.
-            ?childDecisionType skos:prefLabel ?childDecisionTypeLabel .
-
-            ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `GRAPH ?g {`: ''}
-
-              ?submission
-                a meb:Submission ;
-                pav:createdBy ?ckb ;
-                prov:generated ?formData .
-
-              ?formData
-                dcterms:type ?besluitType ;
-                dcterms:relation ?childDecision .
-
-              ?childSubmission
-                dcterms:subject ?childDecision ;
-                pav:createdBy ?eredienst ;
-                prov:generated ?childFormData .
-
-              ?childFormData ext:decisionType ?childDecisionType .
-
-              ?childDecision a ?what .
-
-            ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `}`: ''}
-          }
+        FILTER EXISTS {
+          ?betrokkenBestuur org:organization ?eredienst .
+          ?eenheid ere:betrokkenBestuur ?betrokkenBestuur .
+          ?ckb org:hasSubOrganization ?eredienst.
         }
 
+        ?eredienst skos:prefLabel ?eredienstLabel.
+        ?ckb skos:prefLabel ?ckbLabel.
+        ?besluitType skos:prefLabel ?besluitTypeLabel.
+        ?childDecisionType skos:prefLabel ?childDecisionTypeLabel .
+
         ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `GRAPH ?g {`: ''}
-          ?mostRecentParentSubmission
-            prov:generated / dcterms:relation ?childDecision ;
+          ?submission
+            a meb:Submission ;
+            pav:createdBy ?ckb ;
             nmo:sentDate ?dateSent ;
-            mu:uuid ?submissionUuid .
-
-          FILTER NOT EXISTS {
-            ?otherParent
-              prov:generated / dcterms:relation ?childDecision ;
-              nmo:sentDate ?otherDateSent .
-
-            FILTER (?otherDateSent > ?dateSent)
-          }
+            mu:uuid ?submissionUuid ;
+            prov:generated ?formData .
+          ?formData
+            dcterms:type ?besluitType ;
+            dcterms:relation ?childDecision .
+          ?childSubmission
+            dcterms:subject ?childDecision ;
+            pav:createdBy ?eredienst ;
+            prov:generated ?childFormData .
+          ?childFormData ext:decisionType ?childDecisionType .
+          ?childDecision a ?what .
         ${SCOPE_SUBMISSIONS_TO_ONE_GRAPH ? `}`: ''}
 
         BIND(CONCAT(?ckbLabel, " namens ", ?eredienstLabel) as ?niceIngezondenDoor)
